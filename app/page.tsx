@@ -19,7 +19,7 @@ export default function Home({ searchParams }: { searchParams: unknown }) {
         <div className="flex flex-col p-4 space-y-4">
           <h1 className="text-center text-lg font-bold">Prompt Game</h1>
           <Input name="name" type="text" placeholder="Name" />
-          <Input name="code" type="text" placeholder="Code" />
+          <Input name="id" type="text" placeholder="ID" />
           <Button type="submit">Join game</Button>
           {error && <p className="text-red-500">{error}</p>}
         </div>
@@ -31,19 +31,19 @@ export default function Home({ searchParams }: { searchParams: unknown }) {
 const joinRoom = async (data: FormData) => {
   "use server";
   const name = data.get("name");
-  const code = data.get("code");
+  const id = data.get("id");
 
-  if (!name || !code) {
-    redirect(`/?error=Missing name or code`);
+  if (!name || !id) {
+    redirect(`/?error=Missing name or id`);
   }
 
   const room = await db.query.rooms.findFirst({
-    where: eq(rooms.code, code.toString()),
+    where: eq(rooms.id, Number(id)),
   });
 
   if (!room) {
-    redirect("/?error=Room not found");
+    return redirect("/?error=Room not found");
   }
 
-  redirect(`/room/${code}?name=${name}`);
+  redirect(`/g/${id}?name=${name}`);
 };

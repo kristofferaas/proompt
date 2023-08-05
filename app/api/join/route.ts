@@ -5,20 +5,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 const joinBody = z.object({
-  code: z.string(),
+  id: z.coerce.number(),
 });
 
 export async function POST(req: NextRequest) {
-  const res = await req.json();
-  const { code } = joinBody.parse(res);
+  const body = await req.json();
+  const { id } = joinBody.parse(body);
   const room = await db.query.rooms.findFirst({
-    where: eq(rooms.code, code),
+    where: eq(rooms.id, id),
   });
   
   if (!room) {
     return NextResponse.json({
       error: "Room not found",
-    });
+    }, {status: 404});
   }
   return NextResponse.json({
     room,
