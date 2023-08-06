@@ -1,4 +1,4 @@
-import { GameStateProvider } from "@/components/game/GameStateProvider";
+import { GameStateProvider } from "@/components/game/game-state-provider";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
