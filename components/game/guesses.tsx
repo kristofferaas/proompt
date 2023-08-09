@@ -38,10 +38,8 @@ export const Guesses: React.FC<GuessesProps> = ({ roomId }) => {
     <div className="bg-red-100 border rounded-lg p-4 space-y-4">
       <h2 className="text-xl">Guesses</h2>
       <ul className="h-80 overflow-auto">
-        {state.currentGame?.guesses.map((guess) => (
-          <li
-            key={guess.createdAt.toString() + guess.playerName}
-          >{`${guess.playerName}: ${guess.guess}`}</li>
+        {state.currentGame?.guesses.map((guess, index) => (
+          <li key={index}>{`${guess.playerName}: ${guess.guess}`}</li>
         ))}
       </ul>
       <form className="flex space-x-4" onSubmit={handleGuess}>

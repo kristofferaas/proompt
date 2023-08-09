@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { RoomState, roomStateSchema } from "../state/route";
-import { sign } from "jsonwebtoken";
+import { SignJWT } from "jose";
 import { env } from "@/lib/env";
 
 const joinBody = z.object({
@@ -60,11 +60,7 @@ const claimName = async (name: string, roomCode: number, state: RoomState) => {
     return null;
   }
 
-  return sign(
-    {
-      name,
-      roomCode,
-    },
-    env.SECRET
-  );
+  return new SignJWT({ name, roomCode })
+    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .sign(new TextEncoder().encode(env.SECRET));
 };

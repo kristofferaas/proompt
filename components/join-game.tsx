@@ -4,12 +4,15 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useMutation } from "@tanstack/react-query";
+import { roomStateSchema } from "@/app/api/state/route";
+import { useRouter } from "next/navigation";
 
 export const JoinGame: React.FC = () => {
+  const router = useRouter();
   const { mutate, error } = useMutation({
     mutationFn: join,
-    onSuccess: () => {
-      console.log("Success");
+    onSuccess: (roomId) => {
+      router.push(`/g/${roomId}`);
     },
   });
 
@@ -46,11 +49,17 @@ export const JoinGame: React.FC = () => {
 };
 
 const join = async (data: { name: string; roomCode: string }) => {
-  const res = await fetch("/api/join-game", {
+  const res = await fetch("/api/join", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
+  const body = await res.json();
+  const roomId = body.room.id;
+  if (typeof roomId === "number") {
+    return roomId;
+  }
+  throw new Error("TODO: Improve this method");
 };
