@@ -1,27 +1,23 @@
-import { NextResponse } from "next/server";
-import { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
-import { env } from "./lib/env";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyToken } from "./lib/auth";
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get("token");
-  const response = NextResponse.next();
 
   if (token) {
-    // verify token
     try {
-      await jwtVerify(token.value, new TextEncoder().encode(env.SECRET));
-      return response;
+      // verify token
+      await verifyToken(token.value);
     } catch (err) {
+      const response = NextResponse.next();
       // If the token is invalid, remove it from the cookies
-      response.cookies.set("token", "", {
-        expires: new Date(0),
-      });
+      response.cookies.delete("token");
+      // Redirect to the home page
+      return NextResponse.redirect(new URL("/", request.url));
     }
   }
 
-  // Redirect to the home page
-  return NextResponse.redirect(new URL("/", request.url));
+  return NextResponse.next();
 }
 
 export const config = {

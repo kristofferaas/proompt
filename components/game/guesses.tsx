@@ -6,16 +6,17 @@ import { useSendAction } from "./use-send-action";
 import { useSearchParams } from "next/navigation";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { SendHorizonalIcon } from "lucide-react";
 
 type GuessesProps = {
   roomId: string;
+  player?: string;
 };
 
-export const Guesses: React.FC<GuessesProps> = ({ roomId }) => {
+export const Guesses: React.FC<GuessesProps> = ({ roomId, player }) => {
   const [state] = useRoomState(roomId);
   const { mutate: sendAction } = useSendAction(roomId);
   const [currentGuess, setCurrentGuess] = useState("");
-  const searchParams = useSearchParams();
 
   function handleGuess(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,13 +24,12 @@ export const Guesses: React.FC<GuessesProps> = ({ roomId }) => {
     if (trimmedGuess.length === 0) {
       return;
     }
-    const playerName = searchParams.get("name");
-    if (playerName === null) {
+    if (!player) {
       return;
     }
     sendAction({
       type: "guess",
-      payload: { player: playerName, guess: trimmedGuess },
+      payload: { guess: trimmedGuess, player },
     });
     setCurrentGuess("");
   }
@@ -50,7 +50,10 @@ export const Guesses: React.FC<GuessesProps> = ({ roomId }) => {
           value={currentGuess}
           onChange={(e) => setCurrentGuess(e.target.value)}
         />
-        <Button type="submit">Send</Button>
+        <Button type="submit" disabled={!player}>
+          Guess
+          <SendHorizonalIcon className="w-4 h-4 ml-2" />
+        </Button>
       </form>
     </div>
   );

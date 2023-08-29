@@ -1,11 +1,10 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { useMutation } from "@tanstack/react-query";
-import { roomStateSchema } from "@/app/api/state/route";
-import { useRouter } from "next/navigation";
 
 export const JoinGame: React.FC = () => {
   const router = useRouter();
@@ -26,7 +25,7 @@ export const JoinGame: React.FC = () => {
   };
 
   return (
-    <div className="my-auto w-60 rounded-lg border flex flex-col p-4 space-y-4">
+    <div className="w-60 rounded-lg border flex flex-col p-4 space-y-4">
       <h1 className="text-center text-2xl font-bold">Proompt</h1>
       <form className="flex flex-col space-y-4" onSubmit={handleJoin}>
         <Input name="name" type="text" placeholder="Name" />
@@ -40,7 +39,7 @@ export const JoinGame: React.FC = () => {
       </form>
       <Link
         href="/create-game"
-        className="text-sm text-muted-foreground text-center hover:underline"
+        className="text-sm text-muted-foreground text-center"
       >
         Create a new game
       </Link>

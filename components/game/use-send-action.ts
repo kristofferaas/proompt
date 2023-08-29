@@ -1,4 +1,4 @@
-import { Action, reducer } from "@/lib/reducer";
+import { Action, reducer } from "@/lib/game/reducer";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoomState } from "./use-game-state";
 

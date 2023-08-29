@@ -1,36 +1,35 @@
 import { claimName } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { commit } from "@/lib/game/commit";
+import { reducer } from "@/lib/game/reducer";
 import { rooms } from "@/lib/schema";
-import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { roomStateSchema } from "../state/route";
 
-const joinBody = z.object({
-  roomCode: z.coerce.number(),
-  name: z.string(),
+const createBody = z.object({
+  playerName: z.string()
 });
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { roomCode, name } = joinBody.parse(body);
-  const room = await db.query.rooms.findFirst({
-    where: eq(rooms.id, roomCode),
-  });
+  const { playerName } = createBody.parse(body);
+
+  // Call reducer with no state to get initial state
+  const initialState = reducer();
+
+  // Insert initial room state
+  const [room] = await db
+    .insert(rooms)
+    .values({
+      state: initialState,
+    })
+    .returning();
 
   if (!room) {
-    return NextResponse.json(
-      {
-        error: "Room not found",
-      },
-      { status: 404 }
-    );
+    return NextResponse.error();
   }
 
-  const state = roomStateSchema.parse(room.state);
-  const token = await claimName(name, roomCode, state);
-
+  const token = await claimName(playerName, room.id, initialState);
   if (!token) {
     return NextResponse.json(
       {
@@ -45,7 +44,7 @@ export async function POST(req: NextRequest) {
     {
       type: "join",
       payload: {
-        player: name,
+        player: playerName,
       },
     },
     token
@@ -53,7 +52,8 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(
     {
-      room,
+      id: room.id,
+      state: room.state,
     },
     {
       status: 200,
