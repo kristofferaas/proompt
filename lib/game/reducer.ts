@@ -1,4 +1,4 @@
-import { GameState, RoomState } from "@/app/api/state/route";
+import { GameState, RoomState } from "@/app/api/state/_schema";
 import { shuffle } from "radash";
 import { z } from "zod";
 

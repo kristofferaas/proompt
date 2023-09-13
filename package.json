@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:build": "docker build -t game .",
+    "db:run": "docker run -d --name game -p 5432:5432 game",
+    "db:migrate": "drizzle-kit push:pg"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.0.2",
@@ -29,6 +32,7 @@
     "next": "13.4.12",
     "pg": "^8.11.2",
     "postcss": "8.4.27",
+    "postgres": "^3.3.5",
     "radash": "^11.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",

@@ -1,4 +1,4 @@
-import { roomStateSchema } from "@/app/api/state/route";
+import { roomStateSchema } from "@/app/api/state/_schema";
 import { useQuery } from "@tanstack/react-query";
 
 export function useRoomState(roomId: string) {
