@@ -7,7 +7,7 @@ if (!process.env.VERCEL) {
 }
 
 export default {
-  schema: "./lib/schema.ts",
+  schema: "./lib/db/schema.ts",
   out: "./drizzle",
   driver: "pg",
   dbCredentials: {

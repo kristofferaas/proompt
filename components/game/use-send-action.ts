@@ -1,14 +1,15 @@
-import { Action, reducer } from "@/lib/game/reducer";
+import { reducer } from "@/lib/game/reducer";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRoomState } from "./use-game-state";
+import { useGameState } from "./use-game-state";
+import { Action } from "@/lib/game/action";
 
 export const useSendAction = (roomId: string) => {
-  const [state] = useRoomState(roomId);
+  const [state] = useGameState(roomId);
   const queryClient = useQueryClient();
 
   return useMutation(
     (action: Action) =>
-      fetch(`/api/action?id=${roomId}`, {
+      fetch(`/api/games/${roomId}`, {
         method: "POST",
         body: JSON.stringify(action),
       }),

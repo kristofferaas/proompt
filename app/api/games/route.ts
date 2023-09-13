@@ -1,65 +1,31 @@
-import { claimName } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { commit } from "@/lib/game/commit";
-import { reducer } from "@/lib/game/reducer";
-import { rooms } from "@/lib/schema";
+import { games } from "@/lib/db/schema";
+import { createGameState } from "@/lib/game/create-game-state";
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-
-const createBody = z.object({
-  playerName: z.string()
-});
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { playerName } = createBody.parse(body);
+  // Create new game state
+  const state = createGameState();
 
-  // Call reducer with no state to get initial state
-  const initialState = reducer();
-
-  // Insert initial room state
-  const [room] = await db
-    .insert(rooms)
+  // Insert game state into db
+  const [game] = await db
+    .insert(games)
     .values({
-      state: initialState,
+      state,
     })
     .returning();
 
-  if (!room) {
+  if (!game) {
     return NextResponse.error();
   }
 
-  const token = await claimName(playerName, room.id, initialState);
-  if (!token) {
-    return NextResponse.json(
-      {
-        error: "Name already taken",
-      },
-      { status: 409 }
-    );
-  }
-
-  await commit(
-    room.id,
-    {
-      type: "join",
-      payload: {
-        player: playerName,
-      },
-    },
-    token
-  );
-
   return NextResponse.json(
     {
-      id: room.id,
-      state: room.state,
+      id: game.id,
+      state: game.state,
     },
     {
       status: 200,
-      headers: {
-        "Set-Cookie": `token=${token}; Path=/; HttpOnly; SameSite=Strict;`,
-      },
     }
   );
 }

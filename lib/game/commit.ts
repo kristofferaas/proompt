@@ -1,8 +1,9 @@
-import { roomStateSchema } from "@/app/api/state/_schema";
 import { db } from "@/lib/db";
-import { Action, reducer } from "@/lib/game/reducer";
-import { rooms } from "@/lib/schema";
+import { reducer } from "@/lib/game/reducer";
+import { rooms } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { Action } from "./action";
+import { gameStateSchema } from "./state";
 
 export const commit = async (id: number, action: Action) => {
   await db.transaction(async (tx) => {
@@ -14,12 +15,16 @@ export const commit = async (id: number, action: Action) => {
       .for("update")
       .limit(1);
 
-    const prevState = roomStateSchema.parse(room?.state);
+    // Validate current game state
+    const currentGameState = gameStateSchema.parse(room?.state);
 
-    // Apply action to game state
-    const nextState = reducer(prevState, action);
+    // Apply action to get next game state
+    const nextGameState = reducer(currentGameState, action);
 
-    // Save game state
-    await tx.update(rooms).set({ state: nextState }).where(eq(rooms.id, id));
+    // Save next game state to db
+    await tx
+      .update(rooms)
+      .set({ state: nextGameState })
+      .where(eq(rooms.id, id));
   });
 };

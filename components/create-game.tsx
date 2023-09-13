@@ -1,11 +1,10 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { roomStateSchema } from "@/app/api/state/_schema";
+import { gameStateSchema } from "@/lib/game/state";
 
 export const CreateGame: React.FC = () => {
   const router = useRouter();
@@ -52,5 +51,5 @@ const create = async (data: { playerName: string }) => {
   if (typeof id !== "number") {
     throw new Error("TODO: Improve this method");
   }
-  return { id, state: roomStateSchema.parse(state) };
+  return { id, state: gameStateSchema.parse(state) };
 };

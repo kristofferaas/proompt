@@ -21,7 +21,7 @@ export const JoinGame: React.FC = () => {
     const name = formData.get("name");
     const roomCode = formData.get("roomCode");
     if (!name || !roomCode) return;
-    mutate({ name: name.toString(), roomCode: roomCode.toString() });
+    mutate({ playerName: name.toString(), gameId: roomCode.toString() });
   };
 
   return (
@@ -47,18 +47,16 @@ export const JoinGame: React.FC = () => {
   );
 };
 
-const join = async (data: { name: string; roomCode: string }) => {
-  const res = await fetch("/api/join", {
+const join = async (data: { playerName: string; gameId: string }) => {
+  const res = await fetch(`/api/games/${data.gameId}/join`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
-  const body = await res.json();
-  const roomId = body.room.id;
-  if (typeof roomId === "number") {
-    return roomId;
+  if (!res.ok) {
+    throw new Error("Game not found");
   }
-  throw new Error("TODO: Improve this method");
+  return data.gameId;
 };
