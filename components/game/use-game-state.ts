@@ -15,7 +15,7 @@ export function useGameState(gameId: string) {
 }
 
 const getGameState = async (gameId: string) => {
-  const res = await fetch(`/api/games/${gameId}`);
+  const res = await fetch(`http://localhost:3000/api/games/${gameId}`);
   const data = await res.json();
   return gameStateSchema.parse(data);
 };

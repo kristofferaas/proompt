@@ -1,11 +1,13 @@
 import { Action } from "./action";
 import { GameState } from "./state";
 
+const SECRET_WORDS = ["apple", "banana", "orange", "pear", "grape"];
+
 export const reducer = (state: GameState, action: Action) => {
   switch (action?.type) {
     case "guess": {
       state.guesses.push({
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
         playerName: action.payload.player,
         guess: action.payload.guess,
       });

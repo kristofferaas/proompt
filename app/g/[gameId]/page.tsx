@@ -12,7 +12,7 @@ export default async function GameRoom({ params }: { params: unknown }) {
   const { gameId } = gameRoomParamsSchema.parse(params);
   const claims = await getOnGoingGame();
 
-  const isSpectator = claims?.roomCode !== Number(gameId);
+  const isSpectator = claims?.gameId !== Number(gameId);
 
   return (
     <main className="container max-w-4xl flex flex-col space-y-4">

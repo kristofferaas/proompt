@@ -8,7 +8,7 @@ export default async function Home() {
 
   return (
     <main className="w-screen h-screen flex flex-col justify-center items-center align-middle gap-4">
-      {claim && <OngoingGame roomCode={claim.roomCode} />}
+      {claim && <OngoingGame gameId={claim.gameId} />}
       <JoinGame />
     </main>
   );

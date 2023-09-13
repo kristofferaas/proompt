@@ -1,3 +1,4 @@
+import { claimName } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { games } from "@/lib/db/schema";
 import { reducer } from "@/lib/game/reducer";
@@ -30,17 +31,15 @@ export const POST = async (
   const currentGameState = gameStateSchema.parse(game?.state);
   const joinBody = joinBodySchema.parse(body);
 
-  // Check if player name is already taken
-  if (
-    currentGameState.players.some((p) => p.playerName === joinBody.playerName)
-  ) {
+  // Claim player name
+  const token = await claimName(joinBody.playerName, gameId, currentGameState);
+
+  if (!token) {
     return NextResponse.json(
       {
-        message: "Name already taken",
+        error: "Name already taken",
       },
-      {
-        status: 409,
-      }
+      { status: 409 }
     );
   }
 
@@ -58,7 +57,14 @@ export const POST = async (
     .set({ state: nextGameState })
     .where(eq(games.id, gameId));
 
-  return NextResponse.json({
-    message: "Joined game",
-  });
+  return NextResponse.json(
+    {
+      message: "Joined game",
+    },
+    {
+      headers: {
+        "Set-Cookie": `token=${token}; Path=/; HttpOnly; SameSite=Strict;`,
+      },
+    }
+  );
 };

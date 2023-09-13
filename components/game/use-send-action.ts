@@ -9,8 +9,11 @@ export const useSendAction = (roomId: string) => {
 
   return useMutation(
     (action: Action) =>
-      fetch(`/api/games/${roomId}`, {
+      fetch(`http://localhost:3000/api/games/${roomId}`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(action),
       }),
     {

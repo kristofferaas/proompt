@@ -29,11 +29,27 @@ const guessActionSchema = z.object({
   }),
 });
 
+const promptActionSchema = z.object({
+  type: z.literal("prompt"),
+  payload: z.object({
+    prompt: z.string(),
+  }),
+});
+
+const imageGeneratedActionSchema = z.object({
+  type: z.literal("image-generated"),
+  payload: z.object({
+    image: z.string(),
+  }),
+});
+
 export const actionSchema = z.union([
   createGameActionSchema,
   joinGameActionSchema,
   leaveGameActionSchema,
   guessActionSchema,
+  promptActionSchema,
+  imageGeneratedActionSchema,
 ]);
 
 export type Action = z.infer<typeof actionSchema>;

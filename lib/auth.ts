@@ -1,27 +1,27 @@
 import { SignJWT, jwtVerify } from "jose";
 import { env } from "./env";
-import { RoomCode, RoomState } from "@/app/api/state/_schema";
 import { z } from "zod";
+import { GameState } from "./game/state";
 
 const claimsSchema = z.object({
   name: z.string(),
-  roomCode: z.number(),
+  gameId: z.number(),
 });
 
 export type Claims = z.infer<typeof claimsSchema>;
 
 export const claimName = async (
   name: string,
-  roomCode: RoomCode,
-  state: RoomState
+  gameId: number,
+  state: GameState
 ) => {
-  const nameTaken = state.players.some((player) => player.name === name);
+  const nameTaken = state.players.some((player) => player.playerName === name);
 
   if (nameTaken) {
     return null;
   }
 
-  const claims = claimsSchema.parse({ name, roomCode });
+  const claims = claimsSchema.parse({ name, gameId });
 
   return new SignJWT(claims)
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })

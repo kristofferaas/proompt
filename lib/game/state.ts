@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const guessSchema = z.object({
-  createdAt: z.date(),
+  createdAt: z.string(),
   playerName: z.string(),
   guess: z.string(),
 });
@@ -14,6 +14,8 @@ const playerSchema = z.object({
 export const gameStateSchema = z.object({
   players: z.array(playerSchema),
   guesses: z.array(guessSchema),
+  prompter: z.string(),
+  wordToGuess: z.string(),
 });
 
 export type GameState = z.infer<typeof gameStateSchema>;
