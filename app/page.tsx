@@ -1,49 +1,25 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { db } from "@/lib/db";
-import { rooms } from "@/lib/schema";
-import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
-import { z } from "zod";
+import { JoinGame } from "@/components/join-game";
+import { OngoingGame } from "@/components/ongoing-game";
+import { verifyToken } from "@/lib/auth";
+import { cookies } from "next/headers";
 
-const searchParamsSchema = z.object({
-  error: z.string().optional(),
-});
-
-export default function Home({ searchParams }: { searchParams: unknown }) {
-  const { error } = searchParamsSchema.parse(searchParams);
+export default async function Home() {
+  const claim = await getOnGoingGame();
 
   return (
-    <main className="w-screen h-screen flex justify-center">
-      <form className=" my-auto rounded-lg border" action={joinRoom}>
-        <div className="flex flex-col p-4 space-y-4">
-          <h1 className="text-center text-lg font-bold">Prompt Game</h1>
-          <Input name="name" type="text" placeholder="Name" />
-          <Input name="id" type="text" placeholder="ID" />
-          <Button type="submit">Join game</Button>
-          {error && <p className="text-red-500">{error}</p>}
-        </div>
-      </form>
+    <main className="w-screen h-screen flex flex-col justify-center items-center align-middle gap-4">
+      {claim && <OngoingGame roomCode={claim.roomCode} />}
+      <JoinGame />
     </main>
   );
 }
 
-const joinRoom = async (data: FormData) => {
-  "use server";
-  const name = data.get("name");
-  const id = data.get("id");
-
-  if (!name || !id) {
-    redirect(`/?error=Missing name or id`);
+const getOnGoingGame = async () => {
+  try {
+    const token = cookies().get("token");
+    if (!token) return null;
+    return await verifyToken(token.value);
+  } catch {
+    return null;
   }
-
-  const room = await db.query.rooms.findFirst({
-    where: eq(rooms.id, Number(id)),
-  });
-
-  if (!room) {
-    return redirect("/?error=Room not found");
-  }
-
-  redirect(`/g/${id}?name=${name}`);
 };
