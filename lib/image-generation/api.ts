@@ -67,7 +67,7 @@ export async function textToImage(
   return blob;
 }
 
-export async function generateAndUploadImage(prompt: string, fileName: string) {
+export async function generateAndUploadImage(prompt: string) {
   const image = await textToImage(prompt);
   console.log("uploading image");
   const { url } = await uploadFile(image);

@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRoomState } from "./use-game-state";
-import { useSendAction } from "./use-send-action";
-import { useSearchParams } from "next/navigation";
-import { Input } from "../ui/input";
-import { Button } from "../ui/button";
 import { SendHorizonalIcon } from "lucide-react";
+import { useState } from "react";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { useGameState } from "./use-game-state";
+import { useSendAction } from "./use-send-action";
 
 type GuessesProps = {
   roomId: string;
@@ -14,7 +13,7 @@ type GuessesProps = {
 };
 
 export const Guesses: React.FC<GuessesProps> = ({ roomId, player }) => {
-  const [state] = useRoomState(roomId);
+  const [state] = useGameState(roomId);
   const { mutate: sendAction } = useSendAction(roomId);
   const [currentGuess, setCurrentGuess] = useState("");
 
@@ -38,7 +37,7 @@ export const Guesses: React.FC<GuessesProps> = ({ roomId, player }) => {
     <div className="bg-red-100 border rounded-lg p-4 space-y-4">
       <h2 className="text-xl">Guesses</h2>
       <ul className="h-80 overflow-auto">
-        {state.currentGame?.guesses.map((guess, index) => (
+        {state.guesses.map((guess, index) => (
           <li key={index}>{`${guess.playerName}: ${guess.guess}`}</li>
         ))}
       </ul>

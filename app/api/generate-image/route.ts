@@ -1,5 +1,4 @@
 import { generateAndUploadImage } from "@/lib/image-generation/api";
-import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 // TODO: Only for fun, remove later
@@ -10,8 +9,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
   console.log("Generating image for prompt: " + prompt);
   const { imageUrl } = await generateAndUploadImage(
     prompt ||
-      "A kitchen appliance that makes Belgian-Norwegian pancakes, where the pancakes are in the shape of five hearts in a circle.",
-    randomUUID() + ".png"
+      "A kitchen appliance that makes Belgian-Norwegian pancakes, where the pancakes are in the shape of five hearts in a circle."
   );
   return NextResponse.json({ imageUrl });
 }
