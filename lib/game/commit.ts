@@ -1,4 +1,4 @@
-import { roomStateSchema } from "@/app/api/state/route";
+import { roomStateSchema } from "@/app/api/state/_schema";
 import { db } from "@/lib/db";
 import { Action, reducer } from "@/lib/game/reducer";
 import { rooms } from "@/lib/schema";

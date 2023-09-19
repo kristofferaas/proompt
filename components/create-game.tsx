@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { roomStateSchema } from "@/app/api/state/route";
+import { roomStateSchema } from "@/app/api/state/_schema";
 
 export const CreateGame: React.FC = () => {
   const router = useRouter();

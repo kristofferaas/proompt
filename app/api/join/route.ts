@@ -5,7 +5,7 @@ import { rooms } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { roomStateSchema } from "../state/route";
+import { roomStateSchema } from "../state/_schema";
 
 const joinBody = z.object({
   roomCode: z.coerce.number(),

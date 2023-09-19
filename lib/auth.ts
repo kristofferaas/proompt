@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { env } from "./env";
-import { RoomCode, RoomState } from "@/app/api/state/route";
+import { RoomCode, RoomState } from "@/app/api/state/_schema";
 import { z } from "zod";
 
 const claimsSchema = z.object({
