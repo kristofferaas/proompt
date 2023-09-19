@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:build": "docker build -t game .",
+    "db:clean": "docker rm -f game",
     "db:run": "docker run -d --name game -p 5432:5432 game",
     "db:migrate": "drizzle-kit push:pg"
   },
