@@ -5,7 +5,8 @@ const INITIAL_GAME_STATE = {
   players: [],
   guesses: [],
   prompter: "",
-  wordToGuess: "",
+  secretWord: "",
+  image: undefined,
 } satisfies GameState;
 
 export const createGameState = () => {

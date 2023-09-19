@@ -1,7 +1,7 @@
 "use client";
 
 import { SendHorizonalIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { useGameState } from "./use-game-state";
@@ -33,10 +33,18 @@ export const Guesses: React.FC<GuessesProps> = ({ roomId, player }) => {
     setCurrentGuess("");
   }
 
+  const guessesRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    if (guessesRef.current) {
+      guessesRef.current.scrollTo({ top: guessesRef.current.scrollHeight });
+    }
+  }, [state.guesses]);
+
   return (
     <div className="bg-red-100 border rounded-lg p-4 space-y-4">
       <h2 className="text-xl">Guesses</h2>
-      <ul className="h-80 overflow-auto">
+      <ul ref={guessesRef} className="h-80 overflow-hidden">
         {state.guesses.map((guess, index) => (
           <li key={index}>{`${guess.playerName}: ${guess.guess}`}</li>
         ))}

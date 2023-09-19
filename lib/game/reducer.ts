@@ -20,6 +20,10 @@ export const reducer = (state: GameState, action: Action) => {
       });
       return state;
     }
+    case "image-generated": {
+      state.image = action.payload.image;
+      return state;
+    }
     default: {
       return state;
     }

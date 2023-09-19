@@ -1,3 +1,4 @@
+import { CurrentImage } from "@/components/game/current-image";
 import { Guesses } from "@/components/game/guesses";
 import { Players } from "@/components/game/players";
 import { verifyToken } from "@/lib/auth";
@@ -15,15 +16,20 @@ export default async function GameRoom({ params }: { params: unknown }) {
   const isSpectator = claims?.gameId !== Number(gameId);
 
   return (
-    <main className="container max-w-4xl flex flex-col space-y-4">
+    <main className="container max-w-4xl flex flex-col gap-4">
       <h1 className="text-2xl mt-4 font-bold text-center">Proompt</h1>
       {isSpectator && (
         <p className="text-center">
           {"You are a spectator. You can't submit guesses."}
         </p>
       )}
-      <Players roomId={gameId} />
-      <Guesses roomId={gameId} player={claims?.name} />
+      <div className="flex gap-4">
+        <CurrentImage gameId={gameId} />
+        <div className="flex flex-col gap-4">
+          <Players roomId={gameId} />
+          <Guesses roomId={gameId} player={claims?.name} />
+        </div>
+      </div>
     </main>
   );
 }

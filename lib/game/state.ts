@@ -15,7 +15,8 @@ export const gameStateSchema = z.object({
   players: z.array(playerSchema),
   guesses: z.array(guessSchema),
   prompter: z.string(),
-  wordToGuess: z.string(),
+  secretWord: z.string(),
+  image: z.string().url().optional(),
 });
 
 export type GameState = z.infer<typeof gameStateSchema>;
