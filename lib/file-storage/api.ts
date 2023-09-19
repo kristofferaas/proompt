@@ -1,6 +1,13 @@
 import { utapi } from "uploadthing/server";
 
-export async function uploadFile(file: Blob) {
+type UploadData = {
+  key: string;
+  url: string;
+  name: string;
+  size: number;
+};
+
+export async function uploadFile(file: Blob): Promise<UploadData> {
   try {
     console.log("Uploading...");
     const result = await utapi.uploadFiles(file);
@@ -10,9 +17,11 @@ export async function uploadFile(file: Blob) {
       throw new Error("Upload failed");
     } else {
       console.log("WOW!");
+      return result.data;
     }
   } catch (e) {
     console.log("Upload error");
     console.log(await e);
+    throw e;
   }
 }

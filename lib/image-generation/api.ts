@@ -21,7 +21,7 @@ export async function textToImage(
   const path = `https://api.stability.ai/v1/generation/${modelName}/text-to-image`;
 
   const promptPrefix =
-    "A clear, realistic depiction of the following concept:\n";
+    "You are a helpful assistant that helps people visualise a concept without using the exact word normally associated with it. Generate a clear image showing the non-mentioned word, using the following description of it:\n";
 
   const headers = {
     Accept: "application/json",
@@ -30,11 +30,11 @@ export async function textToImage(
   };
 
   const body = {
-    steps: 30,
+    steps: 20,
     width: 512,
     height: 512,
     seed: 0,
-    cfg_scale: 7,
+    cfg_scale: 6,
     samples: 1,
     text_prompts: [
       {
@@ -70,5 +70,6 @@ export async function textToImage(
 export async function generateAndUploadImage(prompt: string, fileName: string) {
   const image = await textToImage(prompt);
   console.log("uploading image");
-  await uploadFile(image);
+  const { url } = await uploadFile(image);
+  return { imageData: image, imageUrl: url };
 }
