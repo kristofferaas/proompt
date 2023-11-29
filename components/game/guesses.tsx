@@ -42,7 +42,7 @@ export const Guesses: React.FC<GuessesProps> = ({ roomId, player }) => {
   }, [state.guesses]);
 
   return (
-    <div className="bg-red-100 border rounded-lg p-4 space-y-4">
+    <div className="bg-red-100 border rounded-lg p-4 space-y-4 flex-1">
       <h2 className="text-xl">Guesses</h2>
       <ul ref={guessesRef} className="h-80 overflow-hidden">
         {state.guesses.map((guess, index) => (

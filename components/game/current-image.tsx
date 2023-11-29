@@ -9,7 +9,7 @@ export function CurrentImage({ gameId }: { gameId: string }) {
   const alt = "secret image";
 
   return (
-    <div className="border-b rounded-lg overflow-hidden bg-blue-100 w-[512px] h-[512px] shrink-0">
+    <div className="border-b rounded-lg overflow-hidden bg-blue-100 flex-1 aspect-square">
       {state.image && (
         <Image src={state.image} alt={alt} width={512} height={512} />
       )}

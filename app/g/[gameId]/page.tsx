@@ -13,20 +13,19 @@ export default async function GameRoom({ params }: { params: unknown }) {
   const { gameId } = gameRoomParamsSchema.parse(params);
   const claims = await getOnGoingGame();
 
-  const isSpectator = claims?.gameId !== Number(gameId);
-
   return (
-    <main className="container max-w-4xl flex flex-col gap-4">
-      <h1 className="text-2xl mt-4 font-bold text-center">Proompt</h1>
-      {isSpectator && (
-        <p className="text-center">
-          {"You are a spectator. You can't submit guesses."}
-        </p>
-      )}
-      <div className="flex gap-4">
-        <CurrentImage gameId={gameId} />
-        <div className="flex flex-col gap-4">
+    <main className="container h-screen flex flex-col">
+      <div className="flex justify-center">
+        <h1 className="font-bold text-2xl py-2">Proompt</h1>
+      </div>
+      <div className="flex flex-auto justify-between gap-4 py-4">
+        <div className="w-80 flex">
           <Players roomId={gameId} />
+        </div>
+        <div className="grow shrink-0">
+          <CurrentImage gameId={gameId} />
+        </div>
+        <div className="w-80 flex">
           <Guesses roomId={gameId} player={claims?.name} />
         </div>
       </div>

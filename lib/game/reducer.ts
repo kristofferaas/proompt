@@ -17,6 +17,7 @@ export const reducer = (state: GameState, action: Action) => {
       state.players.push({
         playerName: action.payload.playerName,
         score: 0,
+        role: "guesser",
       });
       return state;
     }
