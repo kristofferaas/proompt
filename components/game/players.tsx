@@ -10,7 +10,7 @@ export const Players: React.FC<PlayersProps> = ({ roomId }) => {
   const [state] = useGameState(roomId);
 
   return (
-    <div className="bg-red-100 border rounded-lg p-4 space-y-4">
+    <div className="bg-red-100 border rounded-lg p-4 space-y-4 grow">
       <h2 className="text-lg">Players</h2>
       <ul>
         {state.players.map((player) => (

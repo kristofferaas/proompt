@@ -9,6 +9,7 @@ const guessSchema = z.object({
 const playerSchema = z.object({
   playerName: z.string(),
   score: z.number(),
+  role: z.enum(["prompter", "guesser", "spectator"]),
 });
 
 export const gameStateSchema = z.object({
