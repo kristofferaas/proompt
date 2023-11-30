@@ -1,6 +1,7 @@
 import { CurrentImage } from "@/components/game/current-image";
 import { Guesses } from "@/components/game/guesses";
 import { Players } from "@/components/game/players";
+import { PromptStage } from "@/components/game/prompt-stage";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { z } from "zod";
@@ -25,6 +26,7 @@ export default async function GameRoom({ params }: { params: unknown }) {
       )}
       <div className="flex gap-4">
         <CurrentImage gameId={gameId} />
+        {claims && <PromptStage claims={claims} />}
         <div className="flex flex-col gap-4">
           <Players roomId={gameId} />
           <Guesses roomId={gameId} player={claims?.name} />

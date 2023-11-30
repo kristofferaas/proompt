@@ -4,9 +4,11 @@ import { GameState } from "./state";
 const INITIAL_GAME_STATE = {
   players: [],
   guesses: [],
-  prompter: "",
-  secretWord: "",
-  image: undefined,
+  prompter: null,
+  secretWord: null,
+  availableWords: [],
+  image: null,
+  roundExpiresAt: null,
 } satisfies GameState;
 
 export const createGameState = () => {

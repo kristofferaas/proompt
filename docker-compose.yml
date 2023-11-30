@@ -1,11 +1,11 @@
-version: '3'
+version: "3"
 
 services:
-    database:
-        image: postgres:15
-        environment:
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: password
-            POSTGRES_DB: game
-        ports:
-            - '5432:5432'
+  database:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: game
+    ports:
+      - "5432:5432"

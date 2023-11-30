@@ -29,6 +29,13 @@ const guessActionSchema = z.object({
   }),
 });
 
+const selectWordSchema = z.object({
+  type: z.literal("select-word"),
+  payload: z.object({
+    word: z.string(),
+  }),
+});
+
 const promptActionSchema = z.object({
   type: z.literal("prompt"),
   payload: z.object({
@@ -50,6 +57,7 @@ export const actionSchema = z.union([
   guessActionSchema,
   promptActionSchema,
   imageGeneratedActionSchema,
+  selectWordSchema,
 ]);
 
 export type Action = z.infer<typeof actionSchema>;

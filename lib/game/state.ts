@@ -14,9 +14,11 @@ const playerSchema = z.object({
 export const gameStateSchema = z.object({
   players: z.array(playerSchema),
   guesses: z.array(guessSchema),
-  prompter: z.string(),
-  secretWord: z.string(),
-  image: z.string().url().optional(),
+  prompter: z.string().nullable(),
+  availableWords: z.array(z.string()),
+  secretWord: z.string().nullable(),
+  image: z.string().url().nullable(),
+  roundExpiresAt: z.coerce.date().nullable(),
 });
 
 export type GameState = z.infer<typeof gameStateSchema>;
