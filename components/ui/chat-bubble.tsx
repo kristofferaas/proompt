@@ -17,15 +17,15 @@ export function ChatBubble({
         "items-end": side === "right",
       })}
     >
-      <span className="text-foreground text-[12px] px-3">{displayName}</span>
-      <div className="relative bg-primary text-primary-foreground py-1 px-3 w-fit min-w-[28px] max-w-[300px] min-h-[32px] rounded-[16px]">
+      <span className="text-foreground text-xs px-3">{displayName}</span>
+      <div className="relative bg-primary text-primary-foreground py-1 px-3 w-fit min-w-[28px] max-w-[280px] min-h-[32px] rounded-lg">
         <ChatBubbleTail
           className={cn(`absolute bottom-0 text-primary`, {
             "right-0 -scale-x-100": side === "right",
             "left-0": side === "left",
           })}
         />
-        <p className="relative font-normal text-[16px] leading-normal bg-inherit">
+        <p className="relative font-normal text-base bg-inherit">
           {message}
         </p>
       </div>

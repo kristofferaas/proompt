@@ -10,5 +10,5 @@ export default function ComponentsLayout({
     return notFound();
   }
 
-  return <div className="container max-w-xl">{children}</div>;
+  return <div className="flex justify-center w-full">{children}</div>;
 }
