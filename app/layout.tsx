@@ -1,9 +1,7 @@
 import { GameStateProvider } from "@/components/game/game-state-provider";
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-
-const inter = Inter({ subsets: ["latin"] });
+import { GeistSans } from "geist/font/sans";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -22,7 +20,7 @@ export default function RootLayout({
       <head>
         <meta name="HandheldFriendly" content="true" />
       </head>
-      <body className={inter.className}>
+      <body className={GeistSans.className}>
         <GameStateProvider>{children}</GameStateProvider>
       </body>
     </html>
