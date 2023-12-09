@@ -1,24 +1,37 @@
+import { cn } from "@/lib/utils";
+
 export type ChatBubbleProps = {
   displayName: string;
   message: string;
+  side?: "left" | "right";
 };
 
-export function ChatBubble({ displayName, message }: ChatBubbleProps) {
+export function ChatBubble({
+  displayName,
+  message,
+  side = "left",
+}: ChatBubbleProps) {
   return (
-    <div>
-      <span className="text-foreground text-[12px] pl-3">{displayName}</span>
-      <div className="relative bg-primary text-primary-foreground py-1 px-3 w-fit min-w-[28px] min-h-[32px] rounded-[16px]">
-        <ChatBubbleTail className="absolute bottom-0 left-0 text-primary" />
-        <div className="relative">
-          <p className="font-normal text-[16px] leading-normal bg-inherit">
-            {message}
-          </p>
-        </div>
+    <div
+      className={cn("flex flex-col", {
+        "items-end": side === "right",
+      })}
+    >
+      <span className="text-foreground text-[12px] px-3">{displayName}</span>
+      <div className="relative bg-primary text-primary-foreground py-1 px-3 w-fit min-w-[28px] max-w-[300px] min-h-[32px] rounded-[16px]">
+        <ChatBubbleTail
+          className={cn(`absolute bottom-0 text-primary`, {
+            "right-0 -scale-x-100": side === "right",
+            "left-0": side === "left",
+          })}
+        />
+        <p className="relative font-normal text-[16px] leading-normal bg-inherit">
+          {message}
+        </p>
       </div>
     </div>
   );
 }
-
 function ChatBubbleTail({ className }: { className?: string }) {
   return (
     <svg
