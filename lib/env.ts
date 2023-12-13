@@ -8,6 +8,7 @@ export const env = createEnv({
    */
   server: {
     SECRET: z.string(),
+    NODE_ENV: z.enum(["development", "production", "test"]),
   },
   /*
    * Environment variables available on the client (and server).
@@ -23,5 +24,6 @@ export const env = createEnv({
    */
   runtimeEnv: {
     SECRET: process.env.SECRET,
+    NODE_ENV: process.env.NODE_ENV,
   },
 });
