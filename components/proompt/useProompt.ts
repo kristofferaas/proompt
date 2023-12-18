@@ -1,3 +1,5 @@
+import { Message } from "@/lib/schema/message-schema";
+import { Round } from "@/lib/schema/round-schema";
 import { create } from "zustand";
 
 type Player = {
@@ -7,73 +9,24 @@ type Player = {
   role: "prompter" | "guesser" | "spectator";
 };
 
-type Message = {
-  id: string;
-  text: string;
-  createdAt: number;
-  displayName: string;
-};
-
 type ProomptState = {
-  status: "prompting" | "playing" | "game-over";
-  players: Player[];
-  addPlayer: (player: Player) => void;
-  removePlayer: (player: Player) => void;
+  round: Round | null;
+  setRound: (round: Round) => void;
   messages: Message[];
-  addMessage: (message: Message) => void;
-  resetMessages: () => void;
-  secretWord: string;
-  setSecretWord: (secretWord: string) => void;
-  prompt: string;
-  setPrompt: (prompt: string) => void;
-  image: string | null;
-  setImage: (image: string | null) => void;
+  newMessage: (message: Message) => void;
 };
 
-export const useProompt = create<ProomptState>((set, get) => ({
-  status: "game-over",
-  players: [],
-  addPlayer: (player) => {
-    set((state) => ({
-      players: [...state.players, player],
-    }));
-  },
-  removePlayer: (player) => {
-    set((state) => ({
-      players: state.players.filter((p) => p.id !== player.id),
+export const useProompt = create<ProomptState>((set) => ({
+  round: null,
+  setRound: (round) => {
+    set(() => ({
+      round,
     }));
   },
   messages: [],
-  addMessage: (message) => {
+  newMessage: (message) => {
     set((state) => ({
       messages: [...state.messages, message],
-    }));
-  },
-  resetMessages: () => {
-    set((state) => ({
-      messages: [],
-    }));
-  },
-  secretWord: "",
-  setSecretWord: (secretWord) => {
-    const { status } = get();
-    if (status === "prompting") {
-      set(() => ({
-        status: "playing",
-        secretWord,
-      }));
-    }
-  },
-  prompt: "",
-  setPrompt: (prompt) => {
-    set(() => ({
-      prompt,
-    }));
-  },
-  image: null,
-  setImage: (image) => {
-    set(() => ({
-      image,
     }));
   },
 }));

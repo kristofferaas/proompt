@@ -1,34 +1,61 @@
 "use client";
 
 import { env } from "@/lib/env";
-import { messageSchema } from "@/lib/schema/message-schema";
+import {
+  ClientSentMessage,
+  serverSentMessagesSchema,
+} from "@/lib/schema/websocket-schema";
 import { usePartySocket } from "partysocket/react";
+import { useProompt } from "@/components/proompt/useProompt";
+import { createContext, useContext, useEffect } from "react";
 
 export type PartyProps = {
   room: string;
   children: React.ReactNode;
 };
 
+const PartyContext = createContext<((message: ClientSentMessage) => void) | null>(null);
+
+export function usePartySend() {
+  const send = useContext(PartyContext);
+
+  if (!send) {
+    throw new Error("useParty must be used within a Party");
+  }
+
+  return send;
+}
+
 export function Party({ room, children }: PartyProps) {
-  usePartySocket({
+  const socket = usePartySocket({
     host: env.NEXT_PUBLIC_PARTYKIT_HOST,
     room,
     onMessage: handleOnMessage,
   });
 
-  return <>{children}</>;
+  useEffect(() => {
+    console.log("socket send updated");
+  }, [socket.send]);
+
+  const handleSend = (message: ClientSentMessage) => {
+    socket.send(JSON.stringify(message));
+  };
+
+  return (
+    <PartyContext.Provider value={handleSend}>{children}</PartyContext.Provider>
+  );
 }
 
 const handleOnMessage = (event: MessageEvent) => {
-  const data = messageSchema.parse(JSON.parse(event.data));
+  const data = serverSentMessagesSchema.parse(JSON.parse(event.data));
 
   switch (data.type) {
     case "round-started": {
-      console.log("round started", data);
+      useProompt.getState().setRound(data.round);
       break;
     }
     case "message-received": {
-      console.log("ping");
+      useProompt.getState().newMessage(data.message);
       break;
     }
     case "player-connected": {
