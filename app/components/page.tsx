@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { SendHorizonalIcon } from "lucide-react";
 import { useState } from "react";
 import { Party, usePartySend } from "../party/party";
-import { ClientSentMessage } from "@/lib/schema/websocket-schema";
+import { ClientSentMessage } from "@/lib/schema/client-sent-message-schema";
 
 export default function ComponentsPage() {
   return (
     <Party room="yeet">
+      <ProomptDevTools />
       <WaitingStage />
       <PickWordStage />
       <PromptStage />
@@ -19,6 +20,29 @@ export default function ComponentsPage() {
       <GuessingStage />
       <GameOverStage />
     </Party>
+  );
+}
+
+function ProomptDevTools() {
+  const [open, setOpen] = useState(false);
+  const state = useProompt();
+
+  return (
+    <>
+      <button
+        className="fixed bottom-0 right-0 z-[9999] p-2 mx-2 my-1"
+        onClick={() => setOpen(!open)}
+      >
+        <span className="text-4xl">🤖</span>
+      </button>
+      {open && (
+        <div className="fixed bg-black text-white my-10 p-10 z-[9999] h-96 overflow-auto">
+          <code>
+            <pre>{JSON.stringify(state, null, 2)}</pre>
+          </code>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -182,12 +206,8 @@ function Chat() {
     e.preventDefault();
     if (!guess) return;
     const clientMessage: ClientSentMessage = {
-      type: "message-send",
-      message: {
-        text: guess,
-        ts: Date.now(),
-        player: "Audun",
-      },
+      type: "guess",
+      guess,
     };
     send(clientMessage);
     setGuess("");

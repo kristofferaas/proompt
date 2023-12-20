@@ -1,29 +1,49 @@
-import { Message } from "@/lib/schema/message-schema";
-import { Round } from "@/lib/schema/round-schema";
 import {
   ClientSentMessage,
-  ServerSentMessage,
   clientSentMessagesSchema,
-} from "@/lib/schema/websocket-schema";
-import { connect } from "http2";
+} from "@/lib/schema/client-sent-message-schema";
+import { Message } from "@/lib/schema/message-schema";
+import { Player, playerSchema } from "@/lib/schema/player-schema";
+import { Round } from "@/lib/schema/round-schema";
+import { ServerSentMessage } from "@/lib/schema/server-sent-message-schema";
+import { verifyToken } from "@clerk/nextjs/server";
 import type * as Party from "partykit/server";
+
+const DEFAULT_CLERK_ENDPOINT = "https://united-escargot-54.clerk.accounts.dev";
 
 export default class Server implements Party.Server {
   private currentRound: Round;
-  private presentPlayers: Set<string> = new Set();
 
   constructor(readonly party: Party.Party) {
     this.currentRound = this.newRound();
   }
 
+  static async onBeforeConnect(request: Party.Request, lobby: Party.Lobby) {
+    try {
+      // get authentication server url from environment variables (optional)
+      const issuer = DEFAULT_CLERK_ENDPOINT;
+      // get token from request query string
+      const token = new URL(request.url).searchParams.get("token") ?? "";
+      // verify the JWT (in this case using clerk)
+      const session = await verifyToken(token, { issuer });
+      // pass any information to the onConnect handler in headers (optional)
+      request.headers.set("X-User-ID", session.sub);
+      // forward the request onwards on onConnect
+      return request;
+    } catch (e) {
+      // authentication failed!
+      // short-circuit the request before it's forwarded to the party
+      return new Response("Unauthorized", { status: 401 });
+    }
+  }
+
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
-    // A websocket just connected!
-    console.log(
-      `Connected:
-  id: ${conn.id}
-  room: ${this.party.id}
-  url: ${new URL(ctx.request.url).pathname}`
-    );
+    const userId = ctx.request.headers.get("X-User-ID");
+
+    if (!userId) {
+      console.error("No user ID");
+      return;
+    }
 
     // Send current round to new connection
     const roundStartedMessage: ServerSentMessage = {
@@ -32,48 +52,58 @@ export default class Server implements Party.Server {
     };
     conn.send(JSON.stringify(roundStartedMessage));
 
-    // Add player from connection to the game
-    this.addPlayer(conn);
+    updateConnectionState(conn, {
+      id: userId,
+      name: "Anonymous",
+      score: 0,
+    });
     this.updatePlayers();
   }
 
   onClose(conn: Party.Connection) {
-    // A websocket just disconnected!
-    console.log(`Disconnected:
-  id: ${conn.id}
-  room: ${this.party.id}`);
+    updateConnectionState(conn, null);
+    this.updatePlayers();
   }
 
   onMessage(message: string, sender: Party.Connection) {
-    // let's log the message
-    console.log(`connection ${sender.id} sent message: ${message}`);
-
-    const data = clientSentMessagesSchema.parse(JSON.parse(message));
-    switch (data.type) {
-      case "ready": {
-        this.step(data, sender);
+    console.log(`Received message from ${sender.id}: ${message}`);
+    const clientMessage = clientSentMessagesSchema.parse(JSON.parse(message));
+    const player = getConnectionState(sender);
+    if (!player) {
+      console.error("No player found");
+      return;
+    }
+    switch (clientMessage.type) {
+      case "join": {
+        // Update players
+        updateConnectionState(sender, { ...player, name: clientMessage.name });
+        this.updatePlayers();
+        break;
       }
-      case "message-send": {
-        this.step(data, sender);
+      case "ready": {
+        this.step(clientMessage, player);
+      }
+      case "guess": {
+        this.step(clientMessage, player);
         break;
       }
       case "pick-word": {
-        this.step(data, sender);
+        this.step(clientMessage, player);
         break;
       }
       case "prompt-word": {
         // Update the current round
-        this.step(data, sender);
+        this.step(clientMessage, player);
         break;
       }
       default: {
-        console.error(`Unhandled type: ${data}`);
+        console.error(`Unhandled type: ${clientMessage}`);
         throw new Error(`Unhandled type`);
       }
     }
   }
 
-  step(data: ClientSentMessage, sender: Party.Connection) {
+  step(data: ClientSentMessage, player: Player) {
     const round = this.currentRound;
 
     switch (round.status) {
@@ -87,7 +117,7 @@ export default class Server implements Party.Server {
         // const isEveryoneReady = true;
 
         // Pick a random player to be prompter
-        const players = Array.from(this.presentPlayers);
+        const players = this.getPlayers();
         const prompter = players[Math.floor(Math.random() * players.length)];
         if (!prompter) {
           console.error("No prompter found");
@@ -95,14 +125,14 @@ export default class Server implements Party.Server {
         }
         this.updateRound({
           ...round,
-          prompter,
+          prompter: prompter.id,
           status: "picking-word",
         });
         break;
       }
       case "picking-word": {
         // Wait for prompter to pick a word
-        const isPrompter = sender.id === round.prompter;
+        const isPrompter = player.id === round.prompter;
         if (!isPrompter) {
           console.log("is not prompter");
           return;
@@ -120,7 +150,7 @@ export default class Server implements Party.Server {
       }
       case "prompting": {
         // Wait for prompter to prompt
-        const isPrompter = sender.id === round.prompter;
+        const isPrompter = player.id === round.prompter;
         if (!isPrompter) {
           return;
         }
@@ -136,7 +166,7 @@ export default class Server implements Party.Server {
         // Mock
         setTimeout(() => {
           const mock = {} as ClientSentMessage;
-          this.step(mock, sender);
+          this.step(mock, player);
         }, 5000);
         break;
       }
@@ -152,17 +182,17 @@ export default class Server implements Party.Server {
       }
       case "guessing": {
         // Wait for players to guess the word
-        if (data.type !== "message-send") {
+        if (data.type !== "guess") {
           return;
         }
         // Prompter can't guess
-        if (sender.id === round.prompter) {
+        const isPrompter = player.id === round.prompter;
+        if (isPrompter) {
           return;
         }
         // Check if the player guessed the correct word
-        if (data.message.text === round.word) {
+        if (data.guess === round.word) {
           // The player guess the word
-          console.log(sender.id, "guessed the word", round.word);
           this.updateRound({
             ...round,
             status: "finished",
@@ -172,7 +202,7 @@ export default class Server implements Party.Server {
           // The player didn't guess the word
           // TODO: Check if the guess was close
         }
-        this.addMessage(data.message, sender);
+        this.addGuess(data.guess, player);
         break;
       }
       case "finished": {
@@ -220,36 +250,22 @@ export default class Server implements Party.Server {
   }
 
   updatePlayers() {
-    // Update present players
-    const presentPlayers = new Set<string>();
-    const connections = this.party.getConnections();
-    for (const conn of connections) {
-      presentPlayers.add(conn.id);
-    }
-    this.presentPlayers = presentPlayers;
+    const players = this.getPlayers();
+    const playersMessage: ServerSentMessage = {
+      type: "presence",
+      players,
+    };
+    this.party.broadcast(JSON.stringify(playersMessage));
   }
 
-  async addPlayer(conn: Party.Connection) {
-    // Create player object
-    const player = {
-      id: conn.id,
-      name: "Player " + conn.id.slice(0, 4),
-      score: 0,
+  async addGuess(guess: string, player: Player) {
+    // Create message object
+    const message: Message = {
+      player: player.name,
+      text: guess,
+      ts: Date.now(),
     };
 
-    // Add player to the players shard
-    await this.party.storage.put(`player:${player.id}`, player);
-
-    const playerConnectedMessage: ServerSentMessage = {
-      type: "player-connected",
-      player,
-    };
-
-    // Broadcast new player to all connections
-    this.party.broadcast(JSON.stringify(playerConnectedMessage));
-  }
-
-  async addMessage(message: Message, sender: Party.Connection) {
     // Add message to the messages shard
     await this.party.storage.put(`message:${message.ts}`, message);
 
@@ -281,6 +297,60 @@ export default class Server implements Party.Server {
 
     return round;
   }
+
+  getPlayers() {
+    const players = new Map<string, Player>();
+    const connections = this.party.getConnections();
+
+    for (const connection of connections) {
+      const player = getConnectionState(connection);
+      if (player) {
+        players.set(player.id, player);
+      }
+    }
+
+    return Array.from(players.values());
+  }
 }
 
 Server satisfies Party.Worker;
+
+function updateConnectionState(
+  connection: Party.Connection,
+  state: Player | null
+) {
+  setConnectionState(connection, (prev) => {
+    if (state) {
+      return { ...prev, ...state };
+    } else {
+      return state;
+    }
+  });
+}
+
+function setConnectionState(
+  connection: Party.Connection,
+  state: Player | null | ((prev: Player | null) => Player | null)
+) {
+  if (typeof state !== "function") {
+    return connection.setState(state);
+  }
+  connection.setState((prev: unknown) => {
+    const prevParseResult = playerSchema.safeParse(prev);
+    if (prevParseResult.success) {
+      return state(prevParseResult.data);
+    } else {
+      return state(null);
+    }
+  });
+}
+
+function getConnectionState(connection: Party.Connection) {
+  const result = playerSchema.safeParse(connection.state);
+  if (result.success) {
+    return result.data;
+  } else {
+    setConnectionState(connection, null);
+    return null;
+  }
+}

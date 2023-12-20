@@ -1,20 +1,21 @@
 "use client";
 
 import { env } from "@/lib/env";
-import {
-  ClientSentMessage,
-  serverSentMessagesSchema,
-} from "@/lib/schema/websocket-schema";
+import { serverSentMessagesSchema } from "@/lib/schema/server-sent-message-schema";
 import { usePartySocket } from "partysocket/react";
 import { useProompt } from "@/components/proompt/useProompt";
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useCallback, useContext, useEffect } from "react";
+import { useAuth, useUser } from "@clerk/nextjs";
+import { ClientSentMessage } from "@/lib/schema/client-sent-message-schema";
 
 export type PartyProps = {
   room: string;
   children: React.ReactNode;
 };
 
-const PartyContext = createContext<((message: ClientSentMessage) => void) | null>(null);
+const PartyContext = createContext<
+  ((message: ClientSentMessage) => void) | null
+>(null);
 
 export function usePartySend() {
   const send = useContext(PartyContext);
@@ -27,19 +28,39 @@ export function usePartySend() {
 }
 
 export function Party({ room, children }: PartyProps) {
+  const { getToken } = useAuth();
   const socket = usePartySocket({
     host: env.NEXT_PUBLIC_PARTYKIT_HOST,
     room,
     onMessage: handleOnMessage,
+    // attach the token to PartyKit in the query string
+    query: async () => ({
+      // get an auth token using your authentication client library
+      token: await getToken(),
+    }),
   });
 
-  useEffect(() => {
-    console.log("socket send updated");
-  }, [socket.send]);
+  const handleSend = useCallback(
+    (message: ClientSentMessage) => {
+      socket.send(JSON.stringify(message));
+    },
+    [socket]
+  );
 
-  const handleSend = (message: ClientSentMessage) => {
-    socket.send(JSON.stringify(message));
-  };
+  const { user } = useUser();
+  let message: ClientSentMessage | null = null;
+  if (user) {
+    message = {
+      type: "join",
+      name: user.fullName ?? "Anonymous",
+    };
+  }
+
+  useEffect(() => {
+    if (message) {
+      handleSend(message);
+    }
+  }, [handleSend, message]);
 
   return (
     <PartyContext.Provider value={handleSend}>{children}</PartyContext.Provider>
@@ -58,8 +79,8 @@ const handleOnMessage = (event: MessageEvent) => {
       useProompt.getState().newMessage(data.message);
       break;
     }
-    case "player-connected": {
-      console.log("player connected", data);
+    case "presence": {
+      useProompt.getState().setPlayers(data.players);
       break;
     }
     default: {
