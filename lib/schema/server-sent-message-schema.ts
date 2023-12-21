@@ -3,13 +3,13 @@ import { roundSchema } from "./round-schema";
 import { messageSchema } from "./message-schema";
 import { playerSchema } from "./player-schema";
 
-const roundStartedSchema = z.object({
-  type: z.literal("round-started"),
+const roundUpdateSchema = z.object({
+  type: z.literal("round-update"),
   round: roundSchema,
 });
 
-const presenceSchema = z.object({
-  type: z.literal("presence"),
+const playerUpdateSchema = z.object({
+  type: z.literal("player-update"),
   players: playerSchema.array(),
 });
 
@@ -19,8 +19,8 @@ const messageReceivedSchema = z.object({
 });
 
 export const serverSentMessagesSchema = z.union([
-  roundStartedSchema,
-  presenceSchema,
+  roundUpdateSchema,
+  playerUpdateSchema,
   messageReceivedSchema,
 ]);
 

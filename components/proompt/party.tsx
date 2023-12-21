@@ -7,6 +7,7 @@ import { useProompt } from "@/components/proompt/useProompt";
 import { createContext, useCallback, useContext, useEffect } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { ClientSentMessage } from "@/lib/schema/client-sent-message-schema";
+import { useRouter } from "next/navigation";
 
 export type PartyProps = {
   room: string;
@@ -28,16 +29,20 @@ export function usePartySend() {
 }
 
 export function Party({ room, children }: PartyProps) {
+  const router = useRouter();
   const { getToken } = useAuth();
   const socket = usePartySocket({
     host: env.NEXT_PUBLIC_PARTYKIT_HOST,
     room,
-    onMessage: handleOnMessage,
     // attach the token to PartyKit in the query string
     query: async () => ({
       // get an auth token using your authentication client library
       token: await getToken(),
     }),
+    onMessage: handleOnMessage,
+    onError: () => {
+      router.push("/");
+    },
   });
 
   const handleSend = useCallback(
@@ -71,7 +76,7 @@ const handleOnMessage = (event: MessageEvent) => {
   const data = serverSentMessagesSchema.parse(JSON.parse(event.data));
 
   switch (data.type) {
-    case "round-started": {
+    case "round-update": {
       useProompt.getState().setRound(data.round);
       break;
     }
@@ -79,7 +84,7 @@ const handleOnMessage = (event: MessageEvent) => {
       useProompt.getState().newMessage(data.message);
       break;
     }
-    case "presence": {
+    case "player-update": {
       useProompt.getState().setPlayers(data.players);
       break;
     }

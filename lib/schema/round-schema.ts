@@ -20,6 +20,9 @@ export const roundSchema = z.object({
   word: z.string().nullable(),
   // Player ID of the prompter
   prompter: z.string().nullable(),
+  // Scores each player has earned this round
+  // Key is the player ID, value is the score
+  scores: z.record(z.string(), z.number()).nullable(),
 });
 
 export type Round = z.infer<typeof roundSchema>;

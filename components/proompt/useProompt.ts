@@ -1,6 +1,8 @@
 import { Message } from "@/lib/schema/message-schema";
 import { Player } from "@/lib/schema/player-schema";
 import { Round } from "@/lib/schema/round-schema";
+import { useUser } from "@clerk/nextjs";
+import { useMemo } from "react";
 import { create } from "zustand";
 
 type ProomptState = {
@@ -27,8 +29,36 @@ export const useProompt = create<ProomptState>((set) => ({
   },
   players: [],
   setPlayers: (players) => {
-    set((state) => ({
+    set(() => ({
       players,
     }));
   },
 }));
+
+export const usePlayers = () => {
+  return useProompt((state) => state.players);
+};
+
+export const useRound = () => {
+  return useProompt((state) => state.round);
+};
+
+export const useCurrentPlayer = () => {
+  const { user } = useUser();
+  const round = useRound();
+  const players = usePlayers();
+
+  const player = useMemo(() => {
+    const currentPlayer = players.find((player) => player.id === user?.id);
+    if (!currentPlayer) return null;
+
+    const isPrompter = round?.prompter === currentPlayer.id;
+
+    return {
+      ...currentPlayer,
+      isPrompter,
+    };
+  }, [round, players, user]);
+
+  return player;
+};
