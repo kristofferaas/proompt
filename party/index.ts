@@ -5,20 +5,30 @@ import {
   PromptWord,
   clientSentMessagesSchema,
 } from "@/lib/schema/client-sent-message-schema";
-import { Message, messageSchema } from "@/lib/schema/message-schema";
+import { Message } from "@/lib/schema/message-schema";
 import { Player, playerSchema } from "@/lib/schema/player-schema";
 import { Round } from "@/lib/schema/round-schema";
 import { ServerSentMessage } from "@/lib/schema/server-sent-message-schema";
 import { verifyToken } from "@clerk/nextjs/server";
 import type * as Party from "partykit/server";
+import { AI, createAI } from "./ai";
+import { z } from "zod";
 
-const DEFAULT_CLERK_ENDPOINT = "https://united-escargot-54.clerk.accounts.dev";
+const envSchema = z.object({
+  REPLICATE_API_TOKEN: z.string(),
+  CLERK_ENDPOINT: z.string(),
+});
 
 export default class Server implements Party.Server {
+  private party: Party.Party;
+  private env: ReturnType<typeof envSchema.parse>;
   private currentRound: Round;
   private guessingStarted: number;
+  private ai: AI;
 
-  constructor(readonly party: Party.Party) {
+  constructor(party: Party.Party) {
+    this.party = party;
+    this.env = envSchema.parse(party.env);
     this.currentRound = {
       id: Date.now(),
       status: "waiting",
@@ -29,12 +39,16 @@ export default class Server implements Party.Server {
       scores: null,
     };
     this.guessingStarted = 0;
+    this.ai = createAI({
+      auth: this.env.REPLICATE_API_TOKEN,
+    });
   }
 
   static async onBeforeConnect(request: Party.Request, lobby: Party.Lobby) {
     try {
+      const env = envSchema.parse(lobby.env);
       // get authentication server url from environment variables (optional)
-      const issuer = DEFAULT_CLERK_ENDPOINT;
+      const issuer = env.CLERK_ENDPOINT;
       // get token from request query string
       const token = new URL(request.url).searchParams.get("token") ?? "";
       // verify the JWT (in this case using clerk)
@@ -207,19 +221,25 @@ export default class Server implements Party.Server {
     this.generateImage();
   }
 
-  generateImage() {
+  async generateImage() {
     const round = this.currentRound;
+    const prompt = round.prompt;
+    if (!prompt) {
+      console.error("No prompt");
+      return;
+    }
     // Wait for server to generate image
-
-    // TODO: Generate image
-    setTimeout(() => {
-      this.guessingStarted = Date.now();
+    try {
+      const data = await this.ai.generateImage(prompt);
+      const imageUrl = data?.[0] || "https://picsum.photos/seed/picsum/512/512";
       this.updateRound({
         ...round,
+        imageUrl,
         status: "guessing",
-        imageUrl: "https://picsum.photos/seed/picsum/512/512",
       });
-    }, 5000);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   playerReady(player: Player, sender: Party.Connection) {
@@ -315,7 +335,6 @@ export default class Server implements Party.Server {
   }
 
   updateRound(round: Round) {
-    console.log("Round updated", round);
     this.currentRound = round;
     let roundMessage: ServerSentMessage = {
       type: "round-update",
