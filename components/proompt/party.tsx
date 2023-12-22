@@ -57,7 +57,7 @@ export function Party({ room, children }: PartyProps) {
   if (user) {
     message = {
       type: "join",
-      name: user.fullName ?? "Anonymous",
+      name: user.username ?? "Anonymous",
     };
   }
 
