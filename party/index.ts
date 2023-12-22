@@ -124,22 +124,6 @@ export default class Server implements Party.Server {
       },
     };
     sender.send(JSON.stringify(roundStartedMessage));
-
-    // Send all the guesses to the new connection
-    // const storage = await this.party.storage.list();
-    // for (const [key, data] of storage) {
-    //   if (key.startsWith("message:")) {
-    //     const message = messageSchema.safeParse(data);
-    //     if (message.success) {
-    //       sender.send(
-    //         JSON.stringify({
-    //           type: "message-received",
-    //           message: message.data,
-    //         })
-    //       );
-    //     }
-    //   }
-    // }
   }
 
   // Handle a player guessing a word
@@ -288,9 +272,6 @@ export default class Server implements Party.Server {
       text: guess,
       ts: Date.now(),
     };
-
-    // Add message to the messages shard
-    await this.party.storage.put(`message:${message.ts}`, message);
 
     const messageReceivedMessage: ServerSentMessage = {
       type: "message-received",
