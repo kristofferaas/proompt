@@ -1,7 +1,8 @@
 import { GameStateProvider } from "@/components/game/game-state-provider";
-import "./globals.css";
-import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import { GeistSans } from "geist/font/sans";
+import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -16,13 +17,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <head>
-        <meta name="HandheldFriendly" content="true" />
-      </head>
-      <body className={GeistSans.className}>
-        <GameStateProvider>{children}</GameStateProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <head>
+          <meta name="HandheldFriendly" content="true" />
+        </head>
+        <body className={GeistSans.className}>
+          <GameStateProvider>{children}</GameStateProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
