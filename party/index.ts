@@ -181,6 +181,17 @@ export default class Server implements Party.Server {
       if (everyoneGuessed) {
         // Round is finished
         this.roundFinished();
+      } else {
+        // Broadcast that the player guessed the word
+        const messageReceivedMessage: ServerSentMessage = {
+          type: "message-received",
+          message: {
+            player: "🤖 Proompt",
+            text: `${player.name} guessed the word!`,
+            ts: Date.now() + 1,
+          },
+        };
+        this.party.broadcast(JSON.stringify(messageReceivedMessage));
       }
     } else {
       // The player didn't guess the word
@@ -405,8 +416,8 @@ export default class Server implements Party.Server {
     // The faster you guess the more points you get
     for (const guesser of guessers) {
       if (guesser.guessedAt) {
-        const time = guesser.guessedAt - this.guessingStarted;
-        const score = Math.floor(10000 / time);
+        const delta = guesser.guessedAt - this.guessingStarted;
+        const score = Math.max(10000 - delta, 0);
         scores.set(guesser.id, score);
       } else {
         scores.set(guesser.id, 0);
