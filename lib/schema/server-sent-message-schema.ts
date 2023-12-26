@@ -18,10 +18,16 @@ const messageReceivedSchema = z.object({
   message: messageSchema,
 });
 
+const invalidPromptMessageSchema = z.object({
+  type: z.literal("invalid-prompt"),
+  message: z.string(),
+});
+
 export const serverSentMessagesSchema = z.union([
   roundUpdateSchema,
   playerUpdateSchema,
   messageReceivedSchema,
+  invalidPromptMessageSchema,
 ]);
 
 export type ServerSentMessage = z.infer<typeof serverSentMessagesSchema>;

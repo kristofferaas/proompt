@@ -40,12 +40,14 @@ export default function PartyPage() {
         type="text"
         placeholder="Enter your name"
         className="h-12"
+        required
       />
       <Input
         name="code"
         type="text"
         placeholder="Enter game code"
         className="h-12"
+        required
       />
       <Button type="submit" className="h-12">
         Join game

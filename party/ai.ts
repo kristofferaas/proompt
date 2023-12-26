@@ -1,4 +1,5 @@
 import Replicate from "replicate";
+import { z } from "zod";
 
 const PLAYGROUND_V2_1024_AESTHETIC =
   "playgroundai/playground-v2-1024px-aesthetic:42fe626e41cc811eaf02c94b892774839268ce1994ea778eba97103fe1ef51b8";
@@ -13,12 +14,11 @@ const PLAYGROUND_V2_1024_INPUT = {
   num_inference_steps: 50,
 };
 
-const STABLE_DIFFUSION =
-  "stability-ai/stable-diffusion:27b93a2413e7f36cd83da926f3656280b2931564ff050bf9575f1fdf9bcd7478";
-
 type AIOptions = {
   auth: string;
 };
+
+const replicateOutputSchema = z.string().array();
 
 export function createAI(options: AIOptions) {
   const { auth } = options;
@@ -33,7 +33,7 @@ export function createAI(options: AIOptions) {
       prompt,
     };
     const output = await replicate.run(model, { input });
-    return output as string[];
+    return replicateOutputSchema.parse(output);
   }
 
   return {

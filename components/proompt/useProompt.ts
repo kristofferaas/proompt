@@ -5,6 +5,11 @@ import { useUser } from "@clerk/nextjs";
 import { useMemo } from "react";
 import { create } from "zustand";
 
+type ProomptLog = {
+  type: string;
+  message: string;
+};
+
 type ProomptState = {
   round: Round | null;
   setRound: (round: Round) => void;
@@ -12,6 +17,8 @@ type ProomptState = {
   newMessage: (message: Message) => void;
   players: Player[];
   setPlayers: (players: Player[]) => void;
+  logs: ProomptLog[];
+  addLog: (log: ProomptLog) => void;
 };
 
 export const useProompt = create<ProomptState>((set) => ({
@@ -31,6 +38,12 @@ export const useProompt = create<ProomptState>((set) => ({
   setPlayers: (players) => {
     set(() => ({
       players,
+    }));
+  },
+  logs: [],
+  addLog: (log) => {
+    set((state) => ({
+      logs: [...state.logs, log],
     }));
   },
 }));
@@ -61,4 +74,20 @@ export const useCurrentPlayer = () => {
   }, [round, players, user]);
 
   return player;
+};
+
+export const usePrompter = () => {
+  const round = useRound();
+  const players = usePlayers();
+
+  const prompter = useMemo(() => {
+    if (!round) return null;
+
+    const prompter = players.find((player) => player.id === round.prompter);
+    if (!prompter) return null;
+
+    return prompter;
+  }, [round, players]);
+
+  return prompter;
 };
