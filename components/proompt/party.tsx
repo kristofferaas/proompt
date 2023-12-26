@@ -88,6 +88,14 @@ const handleOnMessage = (event: MessageEvent) => {
       useProompt.getState().setPlayers(data.players);
       break;
     }
+    case "invalid-prompt": {
+      // Prompt is invalid, so we need to get a new one
+      useProompt.getState().addLog({
+        type: "invalid-prompt",
+        message: "Prompt is invalid, so we need to get a new one",
+      });
+      break;
+    }
     default: {
       console.log("unhandled message", data);
     }

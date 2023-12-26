@@ -19,6 +19,8 @@ const envSchema = z.object({
   CLERK_ENDPOINT: z.string(),
 });
 
+const MINIMUM_PLAYERS = 4;
+
 export default class Server implements Party.Server {
   private party: Party.Party;
   private env: ReturnType<typeof envSchema.parse>;
@@ -77,17 +79,17 @@ export default class Server implements Party.Server {
       name: "Anonymous",
       score: 0,
       ready: false,
+      guessedAt: null,
     });
-    this.updatePlayers();
+    this.notifyPlayers();
   }
 
   onClose(conn: Party.Connection) {
     updateConnectionState(conn, null);
-    this.updatePlayers();
+    this.notifyPlayers();
   }
 
   onMessage(message: string, sender: Party.Connection) {
-    console.log(`Received message from ${sender.id}: ${message}`);
     const clientMessage = clientSentMessagesSchema.parse(JSON.parse(message));
     const player = getConnectionState(sender);
     if (!player) {
@@ -104,7 +106,7 @@ export default class Server implements Party.Server {
         break;
       }
       case "guess": {
-        this.playerGuessed(player, clientMessage);
+        this.playerGuessed(player, clientMessage, sender);
         break;
       }
       case "pick-word": {
@@ -112,7 +114,7 @@ export default class Server implements Party.Server {
         break;
       }
       case "prompt-word": {
-        this.playerPromptedWord(player, clientMessage);
+        this.playerPromptedWord(player, clientMessage, sender);
         break;
       }
       default: {
@@ -125,7 +127,7 @@ export default class Server implements Party.Server {
   async playerJoined(player: Player, message: Join, sender: Party.Connection) {
     // Update players
     updateConnectionState(sender, { ...player, name: message.name });
-    this.updatePlayers();
+    this.notifyPlayers();
 
     // Send current round to new connection but remove prompt and word
     const round = this.currentRound;
@@ -141,27 +143,31 @@ export default class Server implements Party.Server {
   }
 
   // Handle a player guessing a word
-  playerGuessed(player: Player, message: Guess) {
+  playerGuessed(player: Player, { guess }: Guess, sender: Party.Connection) {
     const round = this.currentRound;
-    // Can't guess if we're not guessing
-    if (round.status !== "guessing") {
-      return;
-    }
-    // Prompter can't guess
     const isPrompter = player.id === round.prompter;
-    if (isPrompter) {
+    // Can't guess if we're not guessing or player is prompter
+    if (round.status !== "guessing" || isPrompter) {
       return;
     }
+
+    // Create message object
+    const message: Message = {
+      player: player.name,
+      text: guess,
+      ts: Date.now(),
+    };
+
+    const normalizedGuess = guess.toLowerCase().trim();
+    const normalizedWord = round.word?.toLowerCase().trim();
+
     // Check if the player guessed the correct word
-    if (message.guess === round.word) {
+    if (normalizedGuess === normalizedWord) {
       // The player guessed the word
-      const score = this.calculateScore();
-      const scores = round.scores ?? {};
-      scores[player.id] = score;
-      this.updateRound({
-        ...round,
-        scores,
-      });
+
+      // Update player with guessedAt timestamp and notify all players
+      updateConnectionState(sender, { ...player, guessedAt: Date.now() });
+      this.notifyPlayers();
 
       // End the round if everyone has guessed, except the prompter
       const players = this.getPlayers();
@@ -169,7 +175,7 @@ export default class Server implements Party.Server {
         (player) => player.id !== round.prompter
       );
       const everyoneGuessed = playersWithoutPrompter.every((player) => {
-        return player.id === round.prompter || scores[player.id] !== undefined;
+        return player.id === round.prompter || player.guessedAt;
       });
 
       if (everyoneGuessed) {
@@ -180,7 +186,13 @@ export default class Server implements Party.Server {
       // The player didn't guess the word
       // TODO: Check if the guess was close
     }
-    this.addGuess(message.guess, player);
+
+    // Broadcast new message to all connections
+    const messageReceivedMessage: ServerSentMessage = {
+      type: "message-received",
+      message,
+    };
+    this.party.broadcast(JSON.stringify(messageReceivedMessage));
   }
 
   // Handle a player picking a word
@@ -195,7 +207,7 @@ export default class Server implements Party.Server {
     // Wait for prompter to pick a word
     const isPrompter = player.id === round.prompter;
     if (!isPrompter) {
-      console.log("is not prompter");
+      console.error("is not prompter");
       return;
     }
     this.updateRound({
@@ -205,13 +217,38 @@ export default class Server implements Party.Server {
     });
   }
 
-  playerPromptedWord(player: Player, message: PromptWord) {
+  playerPromptedWord(
+    player: Player,
+    message: PromptWord,
+    sender: Party.Connection
+  ) {
     const round = this.currentRound;
-    // Wait for prompter to prompt
+    // Can't prompt if we're not prompting or player is not prompter
     const isPrompter = player.id === round.prompter;
-    if (!isPrompter) {
+    if (!isPrompter || round.status !== "prompting") {
       return;
     }
+
+    const word = round.word;
+    if (!word) {
+      console.error("No word");
+      return;
+    }
+
+    // Prompt can't contain the word
+    const normalizedWord = word.toLowerCase();
+    const normalizedPrompt = message.prompt.toLowerCase();
+    const promptContainsWord = normalizedPrompt.includes(normalizedWord);
+
+    if (promptContainsWord) {
+      const invalidPromptMessage: ServerSentMessage = {
+        type: "invalid-prompt",
+        message: "Prompt cannot contain the word",
+      };
+      sender.send(JSON.stringify(invalidPromptMessage));
+      return;
+    }
+
     this.updateRound({
       ...round,
       prompt: message.prompt,
@@ -244,7 +281,6 @@ export default class Server implements Party.Server {
 
   playerReady(player: Player, sender: Party.Connection) {
     const round = this.currentRound;
-    console.log("Player ready", round.status);
     // Can't ready if we're not waiting or finished
     if (round.status !== "waiting" && round.status !== "finished") {
       return;
@@ -253,15 +289,15 @@ export default class Server implements Party.Server {
     // Update player to be ready
     updateConnectionState(sender, { ...player, ready: true });
 
-    // When everyone is ready pick a prompter and start a new round
     const players = this.getPlayers();
     const everyoneReady = players.every((player) => player.ready);
-    if (everyoneReady) {
+    // Start the round if there are at least 4 players and everyone is ready
+    if (everyoneReady && players.length >= MINIMUM_PLAYERS) {
       // Round is starting
       this.roundStarted();
     } else {
       // Update players
-      this.updatePlayers();
+      this.notifyPlayers();
     }
   }
 
@@ -270,36 +306,23 @@ export default class Server implements Party.Server {
     for (const connection of connections) {
       const player = getConnectionState(connection);
       if (player) {
-        updateConnectionState(connection, { ...player, ready: false });
+        updateConnectionState(connection, {
+          ...player,
+          ready: false,
+          guessedAt: null,
+        });
       }
     }
-    this.updatePlayers();
+    this.notifyPlayers();
   }
 
-  updatePlayers() {
+  notifyPlayers() {
     const players = this.getPlayers();
     const playersMessage: ServerSentMessage = {
       type: "player-update",
       players,
     };
     this.party.broadcast(JSON.stringify(playersMessage));
-  }
-
-  async addGuess(guess: string, player: Player) {
-    // Create message object
-    const message: Message = {
-      player: player.name,
-      text: guess,
-      ts: Date.now(),
-    };
-
-    const messageReceivedMessage: ServerSentMessage = {
-      type: "message-received",
-      message,
-    };
-
-    // Broadcast new message to all connections
-    this.party.broadcast(JSON.stringify(messageReceivedMessage));
   }
 
   roundStarted() {
@@ -323,10 +346,15 @@ export default class Server implements Party.Server {
   roundFinished() {
     this.currentRound.status = "finished";
     const round = this.currentRound;
+
+    // Calculate scores
+    const scores = this.calculateScores();
+
     const roundFinishedMessage: ServerSentMessage = {
       type: "round-update",
       round: {
         ...round,
+        scores,
         status: "finished",
       },
     };
@@ -361,15 +389,44 @@ export default class Server implements Party.Server {
     return Array.from(players.values());
   }
 
-  calculateScore() {
-    // Calculate score, lower delta is better
-    // clamp score from 0 to 100
-    const deltaMs = Date.now() - this.guessingStarted;
-    const delta = Math.min(deltaMs / 1000, 100);
+  calculateScores() {
+    // Calculate scores for this round
+    const players = this.getPlayers();
+    const scores = new Map<string, number>();
 
-    // Calculate score
-    const score = Math.round(100 - delta);
-    return score;
+    const prompter = players.find(
+      (player) => player.id === this.currentRound.prompter
+    );
+    const guessers = players.filter(
+      (player) => player.id !== this.currentRound.prompter
+    );
+
+    // First calculate scores for guessers
+    // The faster you guess the more points you get
+    for (const guesser of guessers) {
+      if (guesser.guessedAt) {
+        const time = guesser.guessedAt - this.guessingStarted;
+        const score = Math.floor(10000 / time);
+        scores.set(guesser.id, score);
+      } else {
+        scores.set(guesser.id, 0);
+      }
+    }
+    // Then calculate scores for prompter
+    // The more people guess the more points you get
+    if (prompter) {
+      const playersThatGuessedCorrectly = guessers.filter(
+        (player) => player.guessedAt
+      );
+      const score = playersThatGuessedCorrectly.length * 1000;
+      scores.set(prompter.id, score);
+    }
+
+    const results: Record<string, number> = {};
+    for (const [key, value] of scores.entries()) {
+      results[key] = value;
+    }
+    return results;
   }
 }
 

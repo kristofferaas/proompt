@@ -2,13 +2,14 @@
 
 import { ClientSentMessage } from "@/lib/schema/client-sent-message-schema";
 import { usePartySend } from "./party";
-import { useCurrentPlayer, useProompt } from "./useProompt";
+import { useCurrentPlayer, usePrompter, useProompt } from "./useProompt";
 import { Button } from "../ui/button";
 import { getRandomWords } from "@/lib/words/get-random-words";
 import { useMemo } from "react";
 
 export function PickWordStage() {
   const status = useProompt((state) => state.round?.status);
+  const prompter = usePrompter();
   const player = useCurrentPlayer();
   const send = usePartySend();
 
@@ -52,7 +53,7 @@ export function PickWordStage() {
     <div className="container bg-background text-foreground fixed w-full h-full z-50">
       <div className="h-full max-w-[320px] flex flex-col justify-center mx-auto gap-5">
         <h1 className="text-4xl text-center">
-          {player?.name} is the prompter, wait for them to pick a word!
+          {prompter?.name} is the prompter, wait for them to pick a word!
         </h1>
       </div>
     </div>

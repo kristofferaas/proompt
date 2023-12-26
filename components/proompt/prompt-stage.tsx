@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { usePartySend } from "./party";
-import { useCurrentPlayer, useProompt } from "./useProompt";
+import { useCurrentPlayer, usePrompter, useProompt } from "./useProompt";
 import { ClientSentMessage } from "@/lib/schema/client-sent-message-schema";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 
 export function PromptStage() {
   const status = useProompt((state) => state.round?.status);
+  const prompter = usePrompter();
   const player = useCurrentPlayer();
   const send = usePartySend();
 
@@ -21,6 +22,10 @@ export function PromptStage() {
     };
     send(message);
   };
+
+  const promptLog = useProompt((state) =>
+    state.logs.find((log) => log.type === "invalid-prompt")
+  );
 
   if (status !== "prompting") return null;
 
@@ -35,6 +40,9 @@ export function PromptStage() {
             onChange={(e) => setPrompt(e.target.value)}
           />
           <Button onClick={handlePrompt}>Submit</Button>
+          {promptLog && (
+            <p className="text-center text-red-500">{promptLog.message}</p>
+          )}
         </div>
       </div>
     );
@@ -44,7 +52,7 @@ export function PromptStage() {
     <div className="container bg-background text-foreground fixed w-full h-full z-50">
       <div className="h-full max-w-[320px] flex flex-col justify-center mx-auto gap-5">
         <h1 className="text-4xl text-center">
-          {player?.name} is the prompter, wait for them to prompt!
+          {prompter?.name} is the prompter, wait for them to prompt!
         </h1>
       </div>
     </div>
