@@ -16,7 +16,8 @@ jobs:
         with:
           node-version: 18
           cache: "npm"
-      - run: npm ci
+      - run: npm install -g pnpm
+      - run: pnpm ci
       - run: npx partykit deploy
         env:
           PARTYKIT_TOKEN: ${{ secrets.PARTYKIT_TOKEN }}
