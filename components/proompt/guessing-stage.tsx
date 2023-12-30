@@ -19,7 +19,7 @@ export function GuessingStage() {
 
   if (isMobile) {
     return (
-      <div className="h-screen w-full bg-blue-100 flex flex-col">
+      <div className="h-dvh w-full bg-blue-100 flex flex-col">
         <MobileChat />
         <GuessForm />
       </div>
@@ -27,7 +27,7 @@ export function GuessingStage() {
   }
 
   return (
-    <div className="h-screen max-w-2xl lg:max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 py-4 mx-8">
+    <div className="h-dvh max-w-2xl lg:max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 py-4 mx-8">
       <div className="hidden lg:flex items-center">
         <GeneratedImage />
       </div>
@@ -148,7 +148,7 @@ function MobileChat() {
   const items = virtualizer.getVirtualItems();
 
   return (
-    <div ref={listRef} className="w-screen h-screen overflow-y-auto">
+    <div ref={listRef} className="w-full h-full overflow-y-auto">
       <div
         className="w-full relative"
         style={{
