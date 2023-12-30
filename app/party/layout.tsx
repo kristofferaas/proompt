@@ -3,5 +3,5 @@ export default function PartyIdLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="flex justify-center w-full container">{children}</div>;
+  return <div className="flex justify-center w-full">{children}</div>;
 }

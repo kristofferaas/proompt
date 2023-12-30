@@ -1,41 +1,104 @@
 "use client";
 
-import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Round } from "@/lib/schema/round-schema";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { useProompt } from "./useProompt";
-import { XIcon } from "lucide-react";
 
 export function ProomptDevTools() {
-  const [open, setOpen] = useState(false);
-
-  if (!open) {
-    return (
-      <button
-        className="fixed bottom-0 left-0 z-[9999] p-2 mx-2 my-1"
-        onClick={() => setOpen(true)}
-      >
-        <span className="text-4xl">🤖</span>
-      </button>
-    );
-  }
-
-  return <DevToolsPanel onClose={() => setOpen(false)} />;
+  return (
+    <Dialog>
+      <DialogTrigger>
+        <span className="text-4xl fixed top-0 right-0 z-[9999] p-2 mx-2 my-1">
+          🤖
+        </span>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Devtools</DialogTitle>
+        </DialogHeader>
+        <DevToolsPanel />
+      </DialogContent>
+    </Dialog>
+  );
 }
 
-function DevToolsPanel({ onClose }: { onClose: () => void }) {
+function DevToolsPanel() {
+  return (
+    <Tabs defaultValue="account" className="w-[400px]">
+      <TabsList>
+        <TabsTrigger value="round">Round</TabsTrigger>
+        <TabsTrigger value="raw">Raw</TabsTrigger>
+      </TabsList>
+      <TabsContent value="round">
+        <RoundDevTools />
+      </TabsContent>
+      <TabsContent value="raw">
+        <RawDevTools />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function RawDevTools() {
   const state = useProompt();
   return (
-    <div className="fixed flex flex-col bottom-0 left-0 w-full h-96 bg-secondary text-secondary-foreground border-t z-[9999]">
-      <div className="border-b flex justify-between h-10">
-        <h1 className="p-2">Proompt Dev Tools</h1>
-        <button className="border-l h-10 w-10" onClick={onClose}>
-          <XIcon className="w-4 h-4 mx-auto" />
-        </button>
-      </div>
-      <div className="p-2 flex-1 overflow-auto">
-        <code>
-          <pre>{JSON.stringify(state, null, 2)}</pre>
-        </code>
-      </div>
-    </div>
+    <code className="flex overflow-auto h-96 bg-secondary text-secondary-foreground rounded-lg p-4">
+      <pre>{JSON.stringify(state, null, 2)}</pre>
+    </code>
+  );
+}
+
+function RoundDevTools() {
+  const round = useProompt((state) => state.round);
+
+  const handleChangeStatus = (status: Round["status"]) => {
+    if (!round) return;
+    if (status === "guessing") {
+      useProompt.getState().setRound({
+        ...round,
+        status,
+        imageUrl: "https://picsum.photos/seed/picsum/200/200",
+        prompt: "A prompt",
+      });
+      return;
+    }
+    useProompt.getState().setRound({
+      ...round,
+      status,
+    });
+  };
+
+  if (!round) return null;
+
+  return (
+    <>
+      <Select value={round?.status} onValueChange={handleChangeStatus}>
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="waiting">Waiting</SelectItem>
+          <SelectItem value="picking-word">Picking Word</SelectItem>
+          <SelectItem value="prompting">Prompting</SelectItem>
+          <SelectItem value="generating">Generating</SelectItem>
+          <SelectItem value="guessing">Guessing</SelectItem>
+          <SelectItem value="finished">Finished</SelectItem>
+        </SelectContent>
+      </Select>
+    </>
   );
 }

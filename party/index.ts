@@ -19,7 +19,7 @@ const envSchema = z.object({
   CLERK_ENDPOINT: z.string(),
 });
 
-const MINIMUM_PLAYERS = 4;
+const MINIMUM_PLAYERS = 1;
 
 export default class Server implements Party.Server {
   private party: Party.Party;
