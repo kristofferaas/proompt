@@ -15,10 +15,14 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^4.28.0",
+    "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-select": "^2.0.0",
     "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-tabs": "^1.0.4",
     "@t3-oss/env-nextjs": "^0.6.0",
     "@tanstack/react-query": "^4.32.6",
     "@tanstack/react-query-devtools": "^4.32.6",
+    "@tanstack/react-virtual": "^3.0.1",
     "@types/node": "20.4.6",
     "@types/pg": "^8.10.2",
     "@types/react": "18.2.18",
@@ -46,6 +50,7 @@
     "tailwindcss-animate": "^1.0.6",
     "typescript": "5.1.6",
     "uploadthing": "^5.5.3",
+    "vaul": "^0.8.0",
     "zod": "^3.21.4",
     "zustand": "^4.4.7"
   },

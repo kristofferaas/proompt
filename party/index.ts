@@ -19,7 +19,7 @@ const envSchema = z.object({
   CLERK_ENDPOINT: z.string(),
 });
 
-const MINIMUM_PLAYERS = 4;
+const MINIMUM_PLAYERS = 1;
 
 export default class Server implements Party.Server {
   private party: Party.Party;
@@ -195,15 +195,29 @@ export default class Server implements Party.Server {
       }
     } else {
       // The player didn't guess the word
-      // TODO: Check if the guess was close
-    }
 
-    // Broadcast new message to all connections
-    const messageReceivedMessage: ServerSentMessage = {
-      type: "message-received",
-      message,
-    };
-    this.party.broadcast(JSON.stringify(messageReceivedMessage));
+      // TODO: Check if the guess was close
+      // if (fuzzyEquals(normalizedGuess, normalizedWord)) {
+      //   // Broadcast that the guess was close
+      //   const messageReceivedMessage: ServerSentMessage = {
+      //     type: "message-received",
+      //     message: {
+      //       player: "🤖 Proompt",
+      //       text: `${player.name} guessed close!`,
+      //       ts: Date.now() + 1,
+      //     },
+      //   };
+      //   this.party.broadcast(JSON.stringify(messageReceivedMessage));
+      //   return;
+      // }
+
+      // Broadcast the incorrect guess to all connections
+      const messageReceivedMessage: ServerSentMessage = {
+        type: "message-received",
+        message,
+      };
+      this.party.broadcast(JSON.stringify(messageReceivedMessage));
+    }
   }
 
   // Handle a player picking a word
