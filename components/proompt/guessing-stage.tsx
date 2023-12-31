@@ -18,7 +18,7 @@ export function GuessingStage() {
     return (
       <div className="fixed h-dvh w-full bg-background flex flex-col">
         <div className="h-16 flex justify-center items-center">
-          <Timer />
+          <CountdownTimer />
         </div>
         <div className="bg-secondary h-[calc(100%-4rem)] flex flex-col rounded-t-lg overflow-hidden">
           <ChatLog />
@@ -30,7 +30,8 @@ export function GuessingStage() {
 
   return (
     <div className="h-dvh max-w-2xl lg:max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 py-4 mx-8">
-      <div className="hidden lg:flex items-center">
+      <div className="hidden lg:flex flex-col justify-center items-center gap-8">
+        <CountdownTimer />
         <GeneratedImage />
       </div>
       <div className="flex flex-col bg-secondary rounded-lg overflow-hidden w-[512px]">
@@ -147,6 +148,27 @@ function ChatLog() {
   );
 }
 
-function Timer() {
-  return <span className="text-xl">0:00</span>;
+function CountdownTimer() {
+  const guessTimeInSeconds = useProompt((state) => state.round?.guessTime || 0);
+
+  const [timeLeft, setTimeLeft] = useState(guessTimeInSeconds);
+
+  useEffect(() => {
+    if (!guessTimeInSeconds) return;
+    setTimeLeft(guessTimeInSeconds);
+  }, [guessTimeInSeconds]);
+
+  useEffect(() => {
+    if (!timeLeft) return;
+    const timer = setTimeout(() => {
+      setTimeLeft(timeLeft - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [timeLeft]);
+
+  return (
+    <span className="text-xl lg:text-3xl">
+      {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
+    </span>
+  );
 }

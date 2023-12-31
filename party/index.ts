@@ -13,6 +13,7 @@ import { verifyToken } from "@clerk/nextjs/server";
 import type * as Party from "partykit/server";
 import { AI, createAI } from "./ai";
 import { z } from "zod";
+import { distance } from "fastest-levenshtein";
 
 const envSchema = z.object({
   REPLICATE_API_TOKEN: z.string(),
@@ -20,6 +21,7 @@ const envSchema = z.object({
 });
 
 const MINIMUM_PLAYERS = 1;
+const TIME_PER_ROUND = 90;
 
 export default class Server implements Party.Server {
   private party: Party.Party;
@@ -27,6 +29,8 @@ export default class Server implements Party.Server {
   private currentRound: Round;
   private guessingStarted: number;
   private ai: AI;
+  private roundTimeout: ReturnType<typeof setTimeout> | null = null;
+  private hintTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(party: Party.Party) {
     this.party = party;
@@ -39,6 +43,7 @@ export default class Server implements Party.Server {
       word: null,
       prompter: null,
       scores: null,
+      guessTime: TIME_PER_ROUND,
     };
     this.guessingStarted = 0;
     this.ai = createAI({
@@ -159,7 +164,7 @@ export default class Server implements Party.Server {
     };
 
     const normalizedGuess = guess.toLowerCase().trim();
-    const normalizedWord = round.word?.toLowerCase().trim();
+    const normalizedWord = round.word?.toLowerCase().trim() ?? "";
 
     // Check if the player guessed the correct word
     if (normalizedGuess === normalizedWord) {
@@ -196,27 +201,26 @@ export default class Server implements Party.Server {
     } else {
       // The player didn't guess the word
 
-      // TODO: Check if the guess was close
-      // if (fuzzyEquals(normalizedGuess, normalizedWord)) {
-      //   // Broadcast that the guess was close
-      //   const messageReceivedMessage: ServerSentMessage = {
-      //     type: "message-received",
-      //     message: {
-      //       player: "🤖 Proompt",
-      //       text: `${player.name} guessed close!`,
-      //       ts: Date.now() + 1,
-      //     },
-      //   };
-      //   this.party.broadcast(JSON.stringify(messageReceivedMessage));
-      //   return;
-      // }
-
       // Broadcast the incorrect guess to all connections
       const messageReceivedMessage: ServerSentMessage = {
         type: "message-received",
         message,
       };
       this.party.broadcast(JSON.stringify(messageReceivedMessage));
+
+      // The levenshtein distance between the guess and the word is less than 3
+      if (distance(normalizedGuess, normalizedWord) < 3) {
+        // Broadcast that the guess was close
+        const messageReceivedMessage: ServerSentMessage = {
+          type: "message-received",
+          message: {
+            player: "🤖 Proompt",
+            text: `${player.name} was close!`,
+            ts: Date.now() + 1,
+          },
+        };
+        this.party.broadcast(JSON.stringify(messageReceivedMessage));
+      }
     }
   }
 
@@ -294,11 +298,50 @@ export default class Server implements Party.Server {
     try {
       const data = await this.ai.generateImage(prompt);
       const imageUrl = data?.[0] || "https://picsum.photos/seed/picsum/512/512";
+
+      this.guessingStarted = Date.now();
+
       this.updateRound({
         ...round,
         imageUrl,
         status: "guessing",
       });
+
+      const extraTimeInSeconds = 3;
+      const guessTimeInMs = (extraTimeInSeconds + round.guessTime) * 1000;
+      this.roundTimeout = setTimeout(() => {
+        // Round is finished
+        this.roundFinished();
+      }, guessTimeInMs);
+
+      // When there is 10 seconds left, broadcast the prompt
+      const broadcastPromptTimeInMs = (round.guessTime - 10) * 1000;
+      this.hintTimeout = setTimeout(() => {
+        if (this.currentRound.status !== "guessing") {
+          return;
+        }
+        const prompter = this.getPlayers().find(
+          (player) => player.id === round.prompter
+        );
+        const prePromptMessage: ServerSentMessage = {
+          type: "message-received",
+          message: {
+            player: "🤖 Proompt",
+            text: `The prompt ${prompter?.name} wrote was:`,
+            ts: Date.now() + 1,
+          },
+        };
+        const promptMessage: ServerSentMessage = {
+          type: "message-received",
+          message: {
+            player: "🤖 Proompt",
+            text: `${round.prompt}`,
+            ts: Date.now() + 1,
+          },
+        };
+        this.party.broadcast(JSON.stringify(prePromptMessage));
+        this.party.broadcast(JSON.stringify(promptMessage));
+      }, broadcastPromptTimeInMs);
     } catch (e) {
       console.error(e);
     }
@@ -372,6 +415,16 @@ export default class Server implements Party.Server {
     this.currentRound.status = "finished";
     const round = this.currentRound;
 
+    // Clear timeouts
+    if (this.roundTimeout) {
+      clearTimeout(this.roundTimeout);
+      this.roundTimeout = null;
+    }
+    if (this.hintTimeout) {
+      clearTimeout(this.hintTimeout);
+      this.hintTimeout = null;
+    }
+
     // Calculate scores
     const scores = this.calculateScores();
 
@@ -393,8 +446,9 @@ export default class Server implements Party.Server {
       type: "round-update",
       round: {
         ...round,
-        prompt: null,
-        word: null,
+        // TODO: Remove prompt and word for non-prompter
+        // prompt: null,
+        // word: null,
       },
     };
     this.party.broadcast(JSON.stringify(roundMessage));
@@ -430,9 +484,25 @@ export default class Server implements Party.Server {
     // The faster you guess the more points you get
     for (const guesser of guessers) {
       if (guesser.guessedAt) {
-        const delta = guesser.guessedAt - this.guessingStarted;
-        const score = Math.max(10000 - delta, 0);
-        scores.set(guesser.id, score);
+        // The closer to time allowed the more points you get
+        // Max score is 1000
+        const timeAllowedInSeconds = this.currentRound.guessTime;
+        const timeTakenInSeconds =
+          (guesser.guessedAt - this.guessingStarted) / 1000;
+        const timeLeftInSeconds = timeAllowedInSeconds - timeTakenInSeconds;
+
+        // Clamp time between 0 and time allowed
+        // and map it to a score between a integer 0 and 1000
+
+        const score = Math.floor(
+          (Math.min(Math.max(timeLeftInSeconds, 0), timeAllowedInSeconds) /
+            timeAllowedInSeconds) *
+            1000
+        );
+        // Rounded to nearest integer
+        const roundedScore = Math.round(score);
+
+        scores.set(guesser.id, roundedScore);
       } else {
         scores.set(guesser.id, 0);
       }
@@ -443,13 +513,21 @@ export default class Server implements Party.Server {
       const playersThatGuessedCorrectly = guessers.filter(
         (player) => player.guessedAt
       );
-      const score = playersThatGuessedCorrectly.length * 1000;
-      scores.set(prompter.id, score);
+
+      // Prompter gets the average score of all correct guessers
+      const score =
+        playersThatGuessedCorrectly.reduce((acc, player) => {
+          return acc + (scores.get(player.id) || 0);
+        }, 0) / playersThatGuessedCorrectly.length;
+      // Rounded to nearest integer
+      const roundedScore = Math.round(score);
+
+      scores.set(prompter.id, roundedScore);
     }
 
     const results: Record<string, number> = {};
     for (const [key, value] of scores.entries()) {
-      results[key] = value;
+      results[key] = value || 0;
     }
     return results;
   }

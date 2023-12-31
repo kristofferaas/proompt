@@ -8,7 +8,7 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 
 export function PromptStage() {
-  const status = useProompt((state) => state.round?.status);
+  const round = useProompt((state) => state.round);
   const prompter = usePrompter();
   const player = useCurrentPlayer();
   const send = usePartySend();
@@ -27,13 +27,14 @@ export function PromptStage() {
     state.logs.find((log) => log.type === "invalid-prompt")
   );
 
-  if (status !== "prompting") return null;
+  if (!round) return null;
 
-  if (player?.isPrompter) {
+  const word = round?.word;
+  if (player?.isPrompter && word) {
     return (
       <div className="container bg-background text-foreground fixed w-full h-full z-50">
         <div className="h-full max-w-[320px] flex flex-col justify-center mx-auto gap-5">
-          <h1 className="text-4xl text-center">Prompt the word!</h1>
+          <h1 className="text-4xl text-center">Prompt the word {word}</h1>
           <Input
             placeholder="Prompt"
             value={prompt}

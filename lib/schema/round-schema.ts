@@ -23,6 +23,8 @@ export const roundSchema = z.object({
   // Scores each player has earned this round
   // Key is the player ID, value is the score
   scores: z.record(z.string(), z.number()).nullable(),
+  // Time allowed for guessing in seconds
+  guessTime: z.number(),
 });
 
 export type Round = z.infer<typeof roundSchema>;
