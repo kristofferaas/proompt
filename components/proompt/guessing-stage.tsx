@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePartySend } from "./party";
-import { useCurrentPlayer, useProompt } from "./useProompt";
+import { useCurrentPlayer, useMessages, useProompt } from "./useProompt";
 import { ClientSentMessage } from "@/lib/schema/client-sent-message-schema";
 import { ChatBubble } from "../ui/chat-bubble";
 import { Input } from "../ui/input";
@@ -12,16 +12,18 @@ import { useMediaQuery } from "../ui/use-media-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 export function GuessingStage() {
-  const status = useProompt((state) => state.round?.status);
   const isMobile = useMediaQuery("(max-width: 640px)");
-
-  if (status !== "guessing") return null;
 
   if (isMobile) {
     return (
-      <div className="h-dvh w-full bg-blue-100 flex flex-col">
-        <MobileChat />
-        <GuessForm />
+      <div className="fixed h-dvh w-full bg-background flex flex-col">
+        <div className="h-16 flex justify-center items-center">
+          <Timer />
+        </div>
+        <div className="bg-secondary h-[calc(100%-4rem)] flex flex-col rounded-t-lg overflow-hidden">
+          <ChatLog />
+          <GuessForm />
+        </div>
       </div>
     );
   }
@@ -31,7 +33,10 @@ export function GuessingStage() {
       <div className="hidden lg:flex items-center">
         <GeneratedImage />
       </div>
-      <Chat />
+      <div className="flex flex-col bg-secondary rounded-lg overflow-hidden w-[512px]">
+        <ChatLog />
+        <GuessForm />
+      </div>
     </div>
   );
 }
@@ -44,55 +49,6 @@ function GeneratedImage() {
       {imageUrl && (
         <img src={imageUrl} className="w-full h-full object-cover" />
       )}
-    </div>
-  );
-}
-
-function Chat() {
-  const messages = useProompt((state) => state.messages);
-  const send = usePartySend();
-  const player = useCurrentPlayer();
-
-  const [guess, setGuess] = useState("");
-  const handleGuess: React.FormEventHandler = (e) => {
-    e.preventDefault();
-    if (!guess) return;
-    const clientMessage: ClientSentMessage = {
-      type: "guess",
-      guess,
-    };
-    send(clientMessage);
-    setGuess("");
-  };
-
-  return (
-    <div className="flex flex-col bg-secondary rounded-lg overflow-hidden w-[512px]">
-      <ol className="flex flex-1 flex-col gap-4 p-4 overflow-auto">
-        {messages.map((message, index) => (
-          <ChatBubble
-            key={message.ts}
-            displayName={message.player}
-            message={message.text}
-            side={index % 7 ? "left" : "right"}
-          />
-        ))}
-      </ol>
-      <form className="flex gap-2 p-4" onSubmit={handleGuess}>
-        <Input
-          disabled={player?.isPrompter}
-          placeholder="Guess the word"
-          value={guess}
-          onChange={(e) => setGuess(e.target.value)}
-        />
-        <Button
-          disabled={player?.isPrompter}
-          type="submit"
-          size="icon"
-          className="shrink-0"
-        >
-          <SendHorizonalIcon className="w-4 h-4" />
-        </Button>
-      </form>
     </div>
   );
 }
@@ -114,7 +70,7 @@ function GuessForm() {
   };
 
   return (
-    <form className="bg-red-100 flex gap-2 p-4" onSubmit={handleGuess}>
+    <form className="flex gap-2 p-4" onSubmit={handleGuess}>
       <Input
         disabled={player?.isPrompter}
         placeholder="Guess the word"
@@ -133,19 +89,25 @@ function GuessForm() {
   );
 }
 
-function MobileChat() {
-  const messages = useProompt((state) => state.messages);
+function ChatLog() {
+  const messages = useMessages();
 
   const listRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => listRef.current,
     estimateSize: () => 45,
-    overscan: 5,
+    overscan: 2,
     paddingStart: 16,
   });
 
   const items = virtualizer.getVirtualItems();
+
+  useEffect(() => {
+    if (messages.length) {
+      virtualizer.scrollToIndex(messages.length - 1);
+    }
+  }, [messages, virtualizer]);
 
   return (
     <div ref={listRef} className="w-full h-full overflow-y-auto">
@@ -183,4 +145,8 @@ function MobileChat() {
       </div>
     </div>
   );
+}
+
+function Timer() {
+  return <span className="text-xl">0:00</span>;
 }

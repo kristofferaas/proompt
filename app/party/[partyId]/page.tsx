@@ -24,11 +24,11 @@ export default function PartyIdPage({
 }
 
 function Stages() {
-  const round = useProompt((state) => state.round);
+  const status = useProompt((state) => state.round?.status);
 
-  if (!round) return null;
+  if (!status) return null;
 
-  switch (round.status) {
+  switch (status) {
     case "waiting":
       return <WaitingStage />;
     case "picking-word":

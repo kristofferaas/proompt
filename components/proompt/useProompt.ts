@@ -91,3 +91,7 @@ export const usePrompter = () => {
 
   return prompter;
 };
+
+export const useMessages = () => {
+  return useProompt((state) => state.messages);
+};
