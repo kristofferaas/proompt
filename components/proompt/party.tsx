@@ -41,7 +41,7 @@ export function Party({ room, children }: PartyProps) {
     }),
     onMessage: handleOnMessage,
     onError: () => {
-      router.push("/");
+      router.push(`/party?error=connection-failed`);
     },
   });
 
