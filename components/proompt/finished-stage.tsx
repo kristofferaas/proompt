@@ -17,6 +17,9 @@ export function FinishedStage() {
     });
   };
 
+  const word = round?.word ?? "";
+  const prompt = round?.prompt ?? "";
+
   const playersWithScores = useMemo(() => {
     if (!round?.scores) return [];
     return Object.entries(round.scores)
@@ -33,6 +36,9 @@ export function FinishedStage() {
     return (
       <div className="container bg-background text-foreground fixed w-full h-full z-50">
         <div className="h-full max-w-[320px] flex flex-col justify-center mx-auto gap-5">
+          <h1 className="text-xl text-center">
+            The word was {word}, and the prompt given was &quot;{prompt}&quot;
+          </h1>
           <ul className="flex flex-col gap-2">
             {playersWithScores.map((player) => (
               <ChatBubble
