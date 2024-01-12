@@ -315,7 +315,7 @@ export default class Server implements Party.Server {
       }, guessTimeInMs);
 
       // When there is 10 seconds left, broadcast the prompt
-      const broadcastPromptTimeInMs = (round.guessTime - 10) * 1000;
+      const broadcastPromptTimeInMs = (round.guessTime - 30) * 1000;
       this.hintTimeout = setTimeout(() => {
         if (this.currentRound.status !== "guessing") {
           return;

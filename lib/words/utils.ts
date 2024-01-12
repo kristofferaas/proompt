@@ -12,8 +12,5 @@ export function convertFileToJsonArray(filePath: string) {
   // Filter out any empty lines
   lines = lines.filter((line) => line !== "");
 
-  // Convert the array to JSON
-  let jsonArray = JSON.stringify(lines);
-
-  return jsonArray;
+  return lines;
 }
